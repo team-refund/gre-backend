@@ -1,0 +1,55 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Format, build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: gre_ci
+          POSTGRES_USER: gre_ci
+          POSTGRES_PASSWORD: gre-ci-local-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gre_ci -d gre_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Check Java formatting
+        run: ./gradlew spotlessCheck --no-daemon
+
+      - name: Build and run tests
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/gre_ci
+          SPRING_DATASOURCE_USERNAME: gre_ci
+          SPRING_DATASOURCE_PASSWORD: gre-ci-local-only
+          # 컨텍스트 테스트에서 OpenAI 클라이언트를 생성하기 위한 더미 값
+          SPRING_AI_OPENAI_API_KEY: ci-placeholder
+        run: ./gradlew build --no-daemon
