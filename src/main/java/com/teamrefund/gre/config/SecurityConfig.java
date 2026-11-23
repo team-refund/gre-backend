@@ -46,13 +46,16 @@ class SecurityConfig {
         };
     var testLogin =
         PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/dev/test-login");
+    var createCase =
+        PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/cases");
     if (testLoginEnabled) {
-      http.csrf(csrf -> csrf.ignoringRequestMatchers(testLogin));
+      http.csrf(csrf -> csrf.ignoringRequestMatchers(testLogin, createCase));
     }
     return http.authorizeHttpRequests(
             requests -> {
               if (testLoginEnabled) {
                 requests.requestMatchers(testLogin).permitAll();
+                requests.requestMatchers(createCase).authenticated();
               }
               requests
                   .dispatcherTypeMatchers(DispatcherType.ERROR)
