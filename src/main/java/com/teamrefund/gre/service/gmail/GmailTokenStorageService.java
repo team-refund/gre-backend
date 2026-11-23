@@ -35,7 +35,7 @@ public class GmailTokenStorageService {
     var client = createAuthorizedClient(userId, accessToken);
     var refreshToken = tokens.getRefreshToken();
     if (refreshToken == null) {
-      reuseRefreshToken(userId, loginId, googleEmail, client, accessToken.getScopes());
+      reuseRefreshToken(loginId, googleEmail, client, accessToken.getScopes());
     } else {
       client.setRefreshTokenValue(
           tokenCipher.encrypt(
@@ -61,12 +61,11 @@ public class GmailTokenStorageService {
   }
 
   private void reuseRefreshToken(
-      long userId,
       String loginId,
       String googleEmail,
       GmailAuthorizedClient client,
       Set<String> requiredScopes) {
-    var connection = gmailConnectionDao.findForActiveUser(userId, loginId);
+    var connection = gmailConnectionDao.findForActiveUser(loginId);
     if (!matchesConnectedAccount(connection, googleEmail, client.getPrincipalName())) {
       throw new BusinessException(ErrorCode.GMAIL_REFRESH_TOKEN_REQUIRED);
     }

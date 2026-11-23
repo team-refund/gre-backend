@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,14 +15,25 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration(proxyBeanMethods = false)
 class SecurityConfig {
 
   @Bean
+  SecurityContextRepository securityContextRepository() {
+    return new HttpSessionSecurityContextRepository();
+  }
+
+  @Bean
   SecurityFilterChain securityFilterChain(
-      HttpSecurity http, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver)
+      HttpSecurity http,
+      SecurityContextRepository securityContextRepository,
+      @Value("${gre.dev.test-login-enabled}") boolean testLoginEnabled,
+      @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver)
       throws Exception {
     AuthenticationEntryPoint entryPoint =
         (request, response, exception) -> {
@@ -29,15 +41,25 @@ class SecurityConfig {
           resolver.resolveException(
               request, response, null, new BusinessException(ErrorCode.UNAUTHORIZED));
         };
+    var testLogin =
+        PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/dev/test-login");
+    if (testLoginEnabled) {
+      http.csrf(csrf -> csrf.ignoringRequestMatchers(testLogin));
+    }
     return http.authorizeHttpRequests(
-            requests ->
-                requests
-                    .dispatcherTypeMatchers(DispatcherType.ERROR)
-                    .permitAll()
-                    .requestMatchers("/api/gmail/**")
-                    .hasRole("GMAIL_TEST")
-                    .anyRequest()
-                    .denyAll())
+            requests -> {
+              if (testLoginEnabled) {
+                requests.requestMatchers(testLogin).permitAll();
+              }
+              requests
+                  .dispatcherTypeMatchers(DispatcherType.ERROR)
+                  .permitAll()
+                  .requestMatchers("/api/gmail/**")
+                  .hasRole("GMAIL_TEST")
+                  .anyRequest()
+                  .denyAll();
+            })
+        .securityContext(context -> context.securityContextRepository(securityContextRepository))
         .exceptionHandling(
             errors ->
                 errors
