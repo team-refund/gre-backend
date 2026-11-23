@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.gmail.GmailConnectionDao">
+    <resultMap id="gmailConnection" type="com.teamrefund.gre.entity.gmail.GmailConnection">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="googleEmail" column="google_email"/>
+        <result property="status" column="status"/>
+        <result property="oauthClientRegistrationId" column="oauth_client_registration_id"/>
+        <result property="oauthPrincipalName" column="oauth_principal_name"/>
+        <result property="connectedAt" column="connected_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findForActiveUser" resultMap="gmailConnection">
+        SELECT gc.id,
+               u.id AS user_id,
+               gc.google_email,
+               COALESCE(gc.status, 'DISCONNECTED') AS status,
+               gc.oauth_client_registration_id,
+               gc.oauth_principal_name,
+               gc.connected_at,
+               gc.updated_at
+        FROM users u
+        LEFT JOIN gmail_connections gc ON gc.user_id = u.id
+        WHERE u.id = #{userId} AND u.login_id = #{loginId}
+          AND u.status = 'ACTIVE' AND u.deleted_at IS NULL
+    </select>
+    <resultMap id="authorizedClient" type="com.teamrefund.gre.entity.gmail.GmailAuthorizedClient">
+        <id property="clientRegistrationId" column="client_registration_id"/>
+        <id property="principalName" column="principal_name"/>
+        <result property="accessTokenType" column="access_token_type"/>
+        <result property="accessTokenValue" column="access_token_value"/>
+        <result property="accessTokenIssuedAt" column="access_token_issued_at"/>
+        <result property="accessTokenExpiresAt" column="access_token_expires_at"/>
+        <result property="accessTokenScopes" column="access_token_scopes"/>
+        <result property="refreshTokenValue" column="refresh_token_value"/>
+        <result property="refreshTokenIssuedAt" column="refresh_token_issued_at"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="lockActiveUser" resultType="java.lang.Long">
+        SELECT id FROM users
+        WHERE id = #{userId} AND login_id = #{loginId}
+          AND status = 'ACTIVE' AND deleted_at IS NULL
+        FOR UPDATE
+    </select>
+
+    <select id="findAuthorizedClient" resultMap="authorizedClient">
+        SELECT client_registration_id, principal_name, access_token_type, access_token_value,
+               access_token_issued_at, access_token_expires_at, access_token_scopes,
+               refresh_token_value, refresh_token_issued_at, created_at
+        FROM oauth2_authorized_client
+        WHERE client_registration_id = 'gmail' AND principal_name = #{principalName}
+    </select>
+
+    <insert id="upsertAuthorizedClient">
+        INSERT INTO oauth2_authorized_client (
+            client_registration_id, principal_name, access_token_type, access_token_value,
+            access_token_issued_at, access_token_expires_at, access_token_scopes,
+            refresh_token_value, refresh_token_issued_at
+        ) VALUES (
+            #{clientRegistrationId}, #{principalName}, #{accessTokenType}, #{accessTokenValue},
+            #{accessTokenIssuedAt}, #{accessTokenExpiresAt}, #{accessTokenScopes},
+            #{refreshTokenValue}, #{refreshTokenIssuedAt}
+        )
+        ON CONFLICT (client_registration_id, principal_name) DO UPDATE SET
+            access_token_type = EXCLUDED.access_token_type,
+            access_token_value = EXCLUDED.access_token_value,
+            access_token_issued_at = EXCLUDED.access_token_issued_at,
+            access_token_expires_at = EXCLUDED.access_token_expires_at,
+            access_token_scopes = EXCLUDED.access_token_scopes,
+            refresh_token_value = EXCLUDED.refresh_token_value,
+            refresh_token_issued_at = EXCLUDED.refresh_token_issued_at
+    </insert>
+
+    <insert id="upsertConnection">
+        INSERT INTO gmail_connections (
+            user_id, google_email, status, oauth_client_registration_id, oauth_principal_name
+        ) VALUES (#{userId}, #{googleEmail}, 'CONNECTED', 'gmail', #{principalName})
+        ON CONFLICT (user_id) DO UPDATE SET
+            google_email = EXCLUDED.google_email,
+            status = EXCLUDED.status,
+            oauth_client_registration_id = EXCLUDED.oauth_client_registration_id,
+            oauth_principal_name = EXCLUDED.oauth_principal_name,
+            updated_at = now()
+    </insert>
+</mapper>
