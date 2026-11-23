@@ -19,10 +19,10 @@ class PolicyRagTestConfig {
   @Order(1)
   @ConditionalOnProperty(name = "gre.policy.test.enabled", havingValue = "true")
   SecurityFilterChain policyRagTestSecurity(HttpSecurity http) throws Exception {
-    var testRoute =
+    PathPatternRequestMatcher testRoute =
         PathPatternRequestMatcher.withDefaults()
             .matcher(HttpMethod.GET, PolicyRagTestController.PATH);
-    var ingestionRoute =
+    PathPatternRequestMatcher ingestionRoute =
         PathPatternRequestMatcher.withDefaults()
             .matcher(HttpMethod.POST, PolicyRagTestController.PATH + "/ingest");
     return http.securityMatcher(new OrRequestMatcher(testRoute, ingestionRoute))

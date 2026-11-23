@@ -1,6 +1,8 @@
 package com.teamrefund.gre.service.policy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 import com.teamrefund.gre.dto.response.PolicyRagResult;
 import java.nio.file.Files;
@@ -12,16 +14,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ResponseEntity;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.evaluation.FactCheckingEvaluator;
 import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import tools.jackson.databind.json.JsonMapper;
 
 // 실제 DB와 모델을 호출하므로 명시적으로 켰을 때만 실행한다.
@@ -33,6 +35,7 @@ class PolicyRagEvaluationTest {
   @Autowired PolicyRagService policyRagService;
   @Autowired ChatClient.Builder chatClientBuilder;
   @Autowired JsonMapper jsonMapper;
+  @MockitoSpyBean VectorStore vectorStore;
 
   @Test
   void retrievesRefundClausesForAnUndeliveredEbayOrder() throws Exception {
@@ -51,11 +54,18 @@ class PolicyRagEvaluationTest {
     double threshold =
         Double.parseDouble(System.getenv().getOrDefault("GRE_RAG_EVALUATION_THRESHOLD", "0.0"));
 
-    ResponseEntity<ChatResponse, PolicyRagResult> response =
-        policyRagService.reviewPolicyWithResponse(question, threshold, topK);
-    PolicyRagResult result = response.getEntity();
-    List<Document> documents =
-        response.getResponse().getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+    List<Document> documents = new ArrayList<>();
+    doAnswer(
+            invocation -> {
+              @SuppressWarnings("unchecked")
+              List<Document> retrieved = (List<Document>) invocation.callRealMethod();
+              documents.addAll(retrieved);
+              return retrieved;
+            })
+        .when(vectorStore)
+        .similaritySearch(any(SearchRequest.class));
+    PolicyRagResult result =
+        policyRagService.reviewPolicy(question, threshold, topK, "EBAY", "ebay.com");
     assertThat(documents).isNotEmpty();
     assertThat(result).isNotNull();
     String answer = jsonMapper.writeValueAsString(result);
