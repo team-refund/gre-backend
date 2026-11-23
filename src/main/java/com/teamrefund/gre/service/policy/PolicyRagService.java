@@ -104,6 +104,12 @@ public class PolicyRagService {
       return new PolicyRagResult(Status.INSUFFICIENT_FACTS, List.of(), "소비자 요구와 결제 사이트를 확인하세요.");
     }
 
+    return reviewPolicyWithResponse(requirement, score, topK).getEntity();
+  }
+
+  // 테스트는 이 응답에서 최종 JSON과 실제 검색 문서를 함께 확인한다.
+  ResponseEntity<ChatResponse, PolicyRagResult> reviewPolicyWithResponse(
+      String requirement, double score, int topK) {
     SearchRequest searchRequest =
         SearchRequest.builder()
             .query(requirement)
@@ -138,6 +144,6 @@ public class PolicyRagService {
             .getResponse()
             .getMetadata()
             .<Object>get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS));
-    return response.getEntity();
+    return response;
   }
 }
