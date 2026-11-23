@@ -18,7 +18,11 @@ description: GRE 백엔드의 Java 21, Spring Boot, MyBatis, Spring AI 코드 �
 - Controller는 HTTP 요청·입력 검증·응답을 담당하고 Service를 호출한다. Service가 업무 규칙·권한·상태·트랜잭션을 담당한다. DAO는 SQL 실행과 매핑을 담당한다. `entity`의 모델은 MyBatis에서 매핑하는 Java 객체로 정의하고 HTTP·외부 API 의존성을 두지 않는다.
 - Spring Bean은 `private final` 필드와 생성자 주입을 사용한다. Lombok `@RequiredArgsConstructor`를 우선하고, Lombok을 쓰지 않는 클래스는 명시적 생성자를 사용한다. 필드 주입과 의존 Bean의 직접 생성을 피한다. 순환 의존은 책임과 방향을 조정해 해소한다.
 - Service는 대체 구현이나 명확한 모듈 계약이 필요할 때 인터페이스를 둔다. DAO는 MyBatis `@Mapper` 인터페이스로 선언하고 XML `namespace`는 DAO 인터페이스의 전체 클래스명과 일치시킨다. SQL 입력은 `#{...}`로 바인딩하고, 동적 식별자 치환이 필요하면 서버의 고정 허용 목록만 사용한다.
-- 변경이 필요 없는 DTO는 `record`를 우선한다. 요청 DTO에 Bean Validation을 적용하고 업무 규칙은 Service에서 검증한다. 응답은 DTO로 변환한다.
+- 테이블을 표현하는 MyBatis 엔티티는 Lombok `@Data`를 적용한 Java 클래스로 정의한다. ERD의 전체 컬럼에 대응하는 필드를 두고, 엔티티 조회에서는 전체 컬럼을 명시해 가져온다. 집계처럼 테이블 행과 형태가 다른 결과는 별도 조회 모델을 사용한다.
+- SQL과 결과 매핑은 기능별 MyBatis XML에 둔다. DAO 인터페이스에는 메서드 선언과 필요한 파라미터 바인딩만 둔다. `resultMap`의 `id`·`result`로 DB 컬럼을 엔티티 프로퍼티에 명시적으로 매핑한다.
+- Service는 업무 결과를 반환하고, Controller가 응답 계약에 필요한 필드만 골라 응답 DTO로 변환한다. 엔티티를 HTTP 응답에 직접 반환하지 않는다.
+- Service에서 Controller로 전달하는 조회 전용 결과가 별도 타입을 필요로 하면 `dto.query.<기능>`에 클래스로 정의한다. 조회 결과는 `Result`, 항목 요약은 `Summary` 등 역할이 드러나는 이름을 사용한다. HTTP 응답 DTO는 `dto.response`에 두고 Controller에서 변환하며, 단순히 엔티티를 반환해도 충분한 조회에는 별도 결과 타입을 추가하지 않는다.
+- 요청·응답 DTO는 Java 클래스를 기본으로 사용한다. `record`는 기존 계약과의 호환 등 명확한 이유가 있을 때만 사용한다. DTO에는 필요한 생성자와 접근자만 둔다. 요청 DTO에 Bean Validation을 적용하고 업무 규칙은 Service에서 검증한다.
 
 ## 트랜잭션과 외부 호출
 
