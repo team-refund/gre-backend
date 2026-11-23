@@ -74,7 +74,11 @@ class SecurityConfig {
                                 response,
                                 null,
                                 new BusinessException(ErrorCode.FORBIDDEN))))
-        .httpBasic(basic -> basic.authenticationEntryPoint(entryPoint))
+        .httpBasic(
+            basic ->
+                basic
+                    .authenticationEntryPoint(entryPoint)
+                    .securityContextRepository(securityContextRepository))
         .build();
   }
 
