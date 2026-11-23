@@ -41,7 +41,7 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     implementation 'org.springframework.ai:spring-ai-jsoup-document-reader'
-    implementation 'org.springframework.ai:spring-ai-rag'
+    implementation 'org.springframework.ai:spring-ai-vector-store-advisor'
 
     // 컴파일 시 Lombok 코드 생성 및 로컬 개발용 DevTools
     compileOnly 'org.projectlombok:lombok'
