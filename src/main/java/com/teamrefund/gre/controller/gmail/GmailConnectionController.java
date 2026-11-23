@@ -50,7 +50,7 @@ public class GmailConnectionController {
   public GmailMessageSearchResponse searchMessages(
       Principal principal,
       @RequestParam(name = "q", required = false) String query,
-      @RequestParam(required = false) String pageToken) {
+      @RequestParam(name = "pageToken", required = false) String pageToken) {
     var result = gmailMessageService.search(principal.getName(), query, pageToken);
     var messages =
         result.getMessages().stream()
@@ -72,8 +72,8 @@ public class GmailConnectionController {
       Principal principal,
       HttpServletRequest request,
       HttpServletResponse response,
-      @RequestParam(required = false) String code,
-      @RequestParam(required = false) String error) {
+      @RequestParam(name = "code", required = false) String code,
+      @RequestParam(name = "error", required = false) String error) {
     var authorization = authorizationRequests.removeAuthorizationRequest(request, response);
     if (authorization == null || error != null || code == null || code.isBlank()) {
       throw new BusinessException(ErrorCode.GMAIL_OAUTH_INVALID);

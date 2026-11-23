@@ -24,7 +24,7 @@
                gc.updated_at
         FROM users u
         LEFT JOIN gmail_connections gc ON gc.user_id = u.id
-        WHERE u.id = #{userId} AND u.login_id = #{loginId}
+        WHERE u.login_id = #{loginId}
           AND u.status = 'ACTIVE' AND u.deleted_at IS NULL
     </select>
     <resultMap id="authorizedClient" type="com.teamrefund.gre.entity.gmail.GmailAuthorizedClient">

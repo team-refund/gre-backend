@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface GmailConnectionDao {
-  GmailConnection findForActiveUser(@Param("userId") long userId, @Param("loginId") String loginId);
+  GmailConnection findForActiveUser(@Param("loginId") String loginId);
 
   Long lockActiveUser(@Param("userId") long userId, @Param("loginId") String loginId);
 

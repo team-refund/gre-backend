@@ -60,7 +60,7 @@ class GmailTokenStorageServiceTest {
     connection.setGoogleEmail("other-account@example.test");
     connection.setOauthClientRegistrationId("gmail");
     connection.setOauthPrincipalName("gre-user:42");
-    when(dao.findForActiveUser(USER_ID, LOGIN_ID)).thenReturn(connection);
+    when(dao.findForActiveUser(LOGIN_ID)).thenReturn(connection);
     var tokens = accessTokenResponse().build();
 
     assertThatThrownBy(() -> service.save(USER_ID, LOGIN_ID, EMAIL, tokens))
