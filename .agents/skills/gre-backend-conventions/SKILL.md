@@ -7,17 +7,17 @@ description: GRE 백엔드의 Java 21, Spring Boot, MyBatis, Spring AI 코드 �
 
 ## 패키지와 네이밍
 
-- `AGENTS.md`의 기본 패키지 아래에서 `controller`, `service`, `mapper`, `domain` 계층을 먼저 나눈다. 같은 기능은 계층마다 일관된 하위 패키지명을 사용하고 Java 예약어를 피한다.
+- `AGENTS.md`의 기본 패키지 아래에서 `controller`, `service`, `dao`, `entity` 계층을 먼저 나눈다. 같은 기능은 계층마다 일관된 하위 패키지명을 사용하고 Java 예약어를 피한다.
 - 요청 DTO는 `dto.request`, 응답 DTO는 `dto.response`에 둔다. AI와 허용된 도구는 `ai`와 `tool`, 공통 설정과 예외는 `config`와 `exception`에 둔다. MyBatis XML은 `src/main/resources/mapper/` 아래 기능별로 관리한다.
 - 패키지는 영문 소문자, 타입은 PascalCase, 메서드·필드·변수·매개변수는 camelCase, 상수는 UPPER_SNAKE_CASE를 쓴다. 메서드는 동사로 시작하고 boolean 이름은 참일 때의 의미가 드러나게 짓는다.
-- 클래스명에 역할별 접미사 `Controller`, `Service`, `Mapper`, `Exception`을 쓴다. 요청 DTO는 동작을 드러내고 `Request`로, 응답 DTO는 대상을 드러내고 `Response`로 끝낸다.
+- 타입 이름에 역할별 접미사 `Controller`, `Service`, `Dao`, `Exception`을 쓴다. 요청 DTO는 동작을 드러내고 `Request`로, 응답 DTO는 대상을 드러내고 `Response`로 끝낸다.
 - DB 컬럼은 ERD의 snake_case를 따르고 MyBatis에서 Java camelCase와 대응시킨다. API JSON도 별도 계약이 없다면 camelCase를 쓴다. REST URL 세부 규칙은 확정된 API 계약이 있을 때 적용한다.
 
 ## 계층과 데이터 접근
 
-- Controller는 HTTP 요청·입력 검증·응답을 담당하고 Service를 호출한다. Service가 업무 규칙·권한·상태·트랜잭션을 담당한다. Mapper는 SQL 실행과 매핑을 담당한다. Domain에는 HTTP·외부 API 의존성을 두지 않는다.
+- Controller는 HTTP 요청·입력 검증·응답을 담당하고 Service를 호출한다. Service가 업무 규칙·권한·상태·트랜잭션을 담당한다. DAO는 SQL 실행과 매핑을 담당한다. `entity`의 모델은 MyBatis에서 매핑하는 Java 객체로 정의하고 HTTP·외부 API 의존성을 두지 않는다.
 - Spring Bean은 `private final` 필드와 생성자 주입을 사용한다. Lombok `@RequiredArgsConstructor`를 우선하고, Lombok을 쓰지 않는 클래스는 명시적 생성자를 사용한다. 필드 주입과 의존 Bean의 직접 생성을 피한다. 순환 의존은 책임과 방향을 조정해 해소한다.
-- Service는 대체 구현이나 명확한 모듈 계약이 필요할 때 인터페이스를 둔다. MyBatis Mapper는 인터페이스로 선언하고 XML `namespace`는 인터페이스의 전체 클래스명과 일치시킨다. SQL 입력은 `#{...}`로 바인딩하고, 동적 식별자 치환이 필요하면 서버의 고정 허용 목록만 사용한다.
+- Service는 대체 구현이나 명확한 모듈 계약이 필요할 때 인터페이스를 둔다. DAO는 MyBatis `@Mapper` 인터페이스로 선언하고 XML `namespace`는 DAO 인터페이스의 전체 클래스명과 일치시킨다. SQL 입력은 `#{...}`로 바인딩하고, 동적 식별자 치환이 필요하면 서버의 고정 허용 목록만 사용한다.
 - 변경이 필요 없는 DTO는 `record`를 우선한다. 요청 DTO에 Bean Validation을 적용하고 업무 규칙은 Service에서 검증한다. 응답은 DTO로 변환한다.
 
 ## 트랜잭션과 외부 호출
