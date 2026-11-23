@@ -1,8 +1,10 @@
 package com.teamrefund.gre.config;
 
+import com.teamrefund.gre.dao.auth.TestLoginDao;
 import com.teamrefund.gre.exception.BusinessException;
 import com.teamrefund.gre.exception.ErrorCode;
 import jakarta.servlet.DispatcherType;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -11,8 +13,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -22,6 +24,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration(proxyBeanMethods = false)
 class SecurityConfig {
+  private static final Set<String> DB_TEST_LOGINS = Set.of("test2", "test3", "test4");
 
   @Bean
   SecurityContextRepository securityContextRepository() {
@@ -76,15 +79,21 @@ class SecurityConfig {
   }
 
   @Bean
-  UserDetailsService localGmailTestUser(@Value("${gre.gmail.test-password}") String password) {
-    if (password.isBlank()) {
-      return new InMemoryUserDetailsManager();
-    }
+  UserDetailsService gmailTestUsers(
+      TestLoginDao testLoginDao, @Value("${gre.gmail.test-password}") String password) {
     var encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    return new InMemoryUserDetailsManager(
-        User.withUsername("gmail-test")
-            .password(encoder.encode(password))
-            .roles("GMAIL_TEST")
-            .build());
+    var fallbackHash = password.isBlank() ? null : encoder.encode(password);
+    return loginId -> {
+      if ("gmail-test".equals(loginId) && fallbackHash != null) {
+        return User.withUsername(loginId).password(fallbackHash).roles("GMAIL_TEST").build();
+      }
+      if (DB_TEST_LOGINS.contains(loginId)) {
+        var passwordHash = testLoginDao.findActiveUserPasswordHash(loginId);
+        if (passwordHash != null && passwordHash.startsWith("{bcrypt}")) {
+          return User.withUsername(loginId).password(passwordHash).roles("GMAIL_TEST").build();
+        }
+      }
+      throw new UsernameNotFoundException("Test account unavailable");
+    };
   }
 }

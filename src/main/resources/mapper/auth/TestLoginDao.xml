@@ -11,4 +11,11 @@
               AND deleted_at IS NULL
         )
     </select>
+    <select id="findActiveUserPasswordHash" resultType="string">
+        SELECT password_hash
+        FROM users
+        WHERE login_id = #{loginId}
+          AND status = 'ACTIVE'
+          AND deleted_at IS NULL
+    </select>
 </mapper>
