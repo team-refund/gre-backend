@@ -4,15 +4,25 @@ import static com.teamrefund.gre.service.policy.PolicyIngestionService.DEFAULT_C
 import static com.teamrefund.gre.service.policy.PolicyIngestionService.DEFAULT_MIN_CHUNK_SIZE_CHARS;
 import static com.teamrefund.gre.service.policy.PolicyIngestionService.DEFAULT_SELECTOR;
 
+import com.teamrefund.gre.dto.response.PolicyRagBatchEvaluationResponse;
+import com.teamrefund.gre.dto.response.PolicyRagEvaluationResponse;
 import com.teamrefund.gre.dto.response.PolicyRagResult;
 import com.teamrefund.gre.service.policy.PolicyIngestionService;
 import com.teamrefund.gre.service.policy.PolicyRagService;
+import com.teamrefund.gre.service.policy.PolicyRagTestService;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,32 +37,58 @@ public class PolicyRagTestController {
 
   private final PolicyRagService policyRagService;
   private final PolicyIngestionService policyIngestionService;
+  private final PolicyRagTestService policyRagTestService;
 
   @GetMapping("")
   public PolicyRagResult reviewPolicy(
       @RequestParam(name = "question") String question,
       @RequestParam(name = "platform", defaultValue = "EBAY") String platform,
       @RequestParam(name = "site", defaultValue = "ebay.com") String site,
-      @RequestParam(name = "topK", defaultValue = "5") int topK,
+      @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
       @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
-          double similarityThreshold) {
-    validateReviewParameters(topK, similarityThreshold);
+          @DecimalMin("0.0") @DecimalMax("1.0") double similarityThreshold) {
     return policyRagService.reviewPolicy(question, similarityThreshold, topK, platform, site);
+  }
+
+  @PostMapping("/evaluate")
+  public PolicyRagEvaluationResponse evaluatePolicy(
+      @RequestParam(name = "question") @NotBlank String question,
+      @RequestParam(name = "platform", defaultValue = "EBAY") String platform,
+      @RequestParam(name = "site", defaultValue = "ebay.com") String site,
+      @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
+      @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
+          @DecimalMin("0.0") @DecimalMax("1.0") double similarityThreshold) {
+    return policyRagTestService.evaluate(question, similarityThreshold, topK, platform, site);
+  }
+
+  @PostMapping(value = "/evaluate/batch", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public PolicyRagBatchEvaluationResponse evaluateBatch(
+      @RequestBody List<String> questions,
+      @RequestParam(name = "platform", defaultValue = "EBAY") String platform,
+      @RequestParam(name = "site", defaultValue = "ebay.com") String site,
+      @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
+      @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
+          @DecimalMin("0.0") @DecimalMax("1.0") double similarityThreshold) {
+    if (questions.isEmpty() || questions.stream().anyMatch(q -> q == null || q.isBlank())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비어 있지 않은 질의들을 입력하세요.");
+    }
+    return policyRagTestService.evaluateBatch(questions, similarityThreshold, topK, platform, site);
   }
 
   @PostMapping(value = "/ingest", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<String> ingestPolicy(
       @RequestParam(name = "file") MultipartFile file,
-      @RequestParam(name = "policyTitle") String policyTitle,
-      @RequestParam(name = "platform") String platform,
-      @RequestParam(name = "site") String site,
-      @RequestParam(name = "sourceUrl") String sourceUrl,
-      @RequestParam(name = "selector", defaultValue = DEFAULT_SELECTOR) String selector,
-      @RequestParam(name = "chunkSize", defaultValue = "" + DEFAULT_CHUNK_SIZE) int chunkSize,
+      @RequestParam(name = "policyTitle") @NotBlank String policyTitle,
+      @RequestParam(name = "platform") @NotBlank String platform,
+      @RequestParam(name = "site") @NotBlank String site,
+      @RequestParam(name = "sourceUrl") @NotBlank String sourceUrl,
+      @RequestParam(name = "selector", defaultValue = DEFAULT_SELECTOR) @NotBlank String selector,
+      @RequestParam(name = "chunkSize", defaultValue = "" + DEFAULT_CHUNK_SIZE) @Positive int chunkSize,
       @RequestParam(name = "minChunkSizeChars", defaultValue = "" + DEFAULT_MIN_CHUNK_SIZE_CHARS)
-          int minChunkSizeChars) {
-    validateChunkSizes(chunkSize, minChunkSizeChars);
-    validatePolicyInput(file, policyTitle, platform, site, sourceUrl, selector);
+          @PositiveOrZero int minChunkSizeChars) {
+    if (file.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML 파일을 입력하세요.");
+    }
 
     String result =
         policyIngestionService.ingestPolicyFromHtml(
@@ -65,39 +101,5 @@ public class PolicyRagTestController {
             chunkSize,
             minChunkSizeChars);
     return ResponseEntity.ok(result);
-  }
-
-  private void validateReviewParameters(int topK, double similarityThreshold) {
-    if (topK < 1
-        || !Double.isFinite(similarityThreshold)
-        || similarityThreshold < 0
-        || similarityThreshold > 1) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "topK는 1 이상, similarityThreshold는 0~1이어야 합니다.");
-    }
-  }
-
-  private void validateChunkSizes(int chunkSize, int minChunkSizeChars) {
-    if (chunkSize < 1 || minChunkSizeChars < 0) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "chunkSize는 1 이상, minChunkSizeChars는 0 이상이어야 합니다.");
-    }
-  }
-
-  private void validatePolicyInput(
-      MultipartFile file,
-      String policyTitle,
-      String platform,
-      String site,
-      String sourceUrl,
-      String selector) {
-    if (file.isEmpty()
-        || policyTitle.isBlank()
-        || platform.isBlank()
-        || site.isBlank()
-        || sourceUrl.isBlank()
-        || selector.isBlank()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML 파일과 정책 정보를 입력하세요.");
-    }
   }
 }

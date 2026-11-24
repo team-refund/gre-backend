@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
@@ -35,8 +36,16 @@ public class PolicyRagService {
 
   public PolicyRagResult reviewPolicy(
       String requirement, double score, int topK, String platform, String site) {
+    return reviewWithDocuments(requirement, score, topK, platform, site).result();
+  }
+
+  PolicyReview reviewWithDocuments(
+      String requirement, double score, int topK, String platform, String site) {
     if (requirement == null || requirement.isBlank()) {
-      return new PolicyRagResult(Status.INSUFFICIENT_FACTS, List.of(), "소비자 요구와 결제 사이트를 확인하세요.");
+      PolicyRagResult result =
+          new PolicyRagResult(
+              Status.INSUFFICIENT_FACTS, List.of(), "소비자 요구와 결제 사이트를 확인하세요.");
+      return new PolicyReview(result, List.of());
     }
 
     FilterExpressionBuilder filters = new FilterExpressionBuilder();
@@ -52,12 +61,21 @@ public class PolicyRagService {
     QuestionAnswerAdvisor policyAdvisor =
         QuestionAnswerAdvisor.builder(vectorStore).searchRequest(searchRequest).build();
 
-    return chatClient
-        .prompt()
-        .advisors(policyAdvisor, new PolicySourceAdvisor())
-        .system(REVIEW_PROMPT)
-        .user(requirement)
-        .call()
-        .entity(PolicyRagResult.class);
+    var response =
+        chatClient
+            .prompt()
+            .advisors(policyAdvisor, new PolicySourceAdvisor())
+            .system(REVIEW_PROMPT)
+            .user(requirement)
+            .call()
+            .responseEntity(PolicyRagResult.class);
+
+    List<Document> documents =
+        response.response() == null
+            ? null
+            : response.response().getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+    return new PolicyReview(response.entity(), documents == null ? List.of() : documents);
   }
+
+  record PolicyReview(PolicyRagResult result, List<Document> documents) {}
 }

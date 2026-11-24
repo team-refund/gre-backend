@@ -18,7 +18,7 @@ public class PolicyIngestionConfig {
             "eBay Money Back Guarantee policy",
             "EBAY",
             "ebay.com",
-            new ClassPathResource("policy/ebay/money-back-guarantee.html"),
+            new ClassPathResource("policy/money-back-guarantee.html"),
             "https://www.ebay.com/help/policies/ebay/ebay?id=4210",
             PolicyIngestionService.DEFAULT_SELECTOR,
             PolicyIngestionService.DEFAULT_CHUNK_SIZE,
