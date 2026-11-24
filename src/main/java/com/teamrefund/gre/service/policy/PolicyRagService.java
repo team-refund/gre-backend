@@ -43,8 +43,7 @@ public class PolicyRagService {
       String requirement, double score, int topK, String platform, String site) {
     if (requirement == null || requirement.isBlank()) {
       PolicyRagResult result =
-          new PolicyRagResult(
-              Status.INSUFFICIENT_FACTS, List.of(), "소비자 요구와 결제 사이트를 확인하세요.");
+          new PolicyRagResult(Status.INSUFFICIENT_FACTS, List.of(), "소비자 요구와 결제 사이트를 확인하세요.");
       return new PolicyReview(result, List.of());
     }
 

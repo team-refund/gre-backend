@@ -30,23 +30,23 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping(PolicyRagTestController.PATH)
+@RequestMapping("/rag")
 @RequiredArgsConstructor
 public class PolicyRagTestController {
-  public static final String PATH = "/internal/test/policy-rag";
-
   private final PolicyRagService policyRagService;
   private final PolicyIngestionService policyIngestionService;
   private final PolicyRagTestService policyRagTestService;
 
-  @GetMapping("")
+  @GetMapping
   public PolicyRagResult reviewPolicy(
       @RequestParam(name = "question") String question,
       @RequestParam(name = "platform", defaultValue = "EBAY") String platform,
       @RequestParam(name = "site", defaultValue = "ebay.com") String site,
       @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
       @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
-          @DecimalMin("0.0") @DecimalMax("1.0") double similarityThreshold) {
+          @DecimalMin("0.0")
+          @DecimalMax("1.0")
+          double similarityThreshold) {
     return policyRagService.reviewPolicy(question, similarityThreshold, topK, platform, site);
   }
 
@@ -57,7 +57,9 @@ public class PolicyRagTestController {
       @RequestParam(name = "site", defaultValue = "ebay.com") String site,
       @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
       @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
-          @DecimalMin("0.0") @DecimalMax("1.0") double similarityThreshold) {
+          @DecimalMin("0.0")
+          @DecimalMax("1.0")
+          double similarityThreshold) {
     return policyRagTestService.evaluate(question, similarityThreshold, topK, platform, site);
   }
 
@@ -68,7 +70,9 @@ public class PolicyRagTestController {
       @RequestParam(name = "site", defaultValue = "ebay.com") String site,
       @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
       @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
-          @DecimalMin("0.0") @DecimalMax("1.0") double similarityThreshold) {
+          @DecimalMin("0.0")
+          @DecimalMax("1.0")
+          double similarityThreshold) {
     if (questions.isEmpty() || questions.stream().anyMatch(q -> q == null || q.isBlank())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비어 있지 않은 질의들을 입력하세요.");
     }
@@ -83,9 +87,11 @@ public class PolicyRagTestController {
       @RequestParam(name = "site") @NotBlank String site,
       @RequestParam(name = "sourceUrl") @NotBlank String sourceUrl,
       @RequestParam(name = "selector", defaultValue = DEFAULT_SELECTOR) @NotBlank String selector,
-      @RequestParam(name = "chunkSize", defaultValue = "" + DEFAULT_CHUNK_SIZE) @Positive int chunkSize,
+      @RequestParam(name = "chunkSize", defaultValue = "" + DEFAULT_CHUNK_SIZE) @Positive
+          int chunkSize,
       @RequestParam(name = "minChunkSizeChars", defaultValue = "" + DEFAULT_MIN_CHUNK_SIZE_CHARS)
-          @PositiveOrZero int minChunkSizeChars) {
+          @PositiveOrZero
+          int minChunkSizeChars) {
     if (file.isEmpty()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "HTML 파일을 입력하세요.");
     }
