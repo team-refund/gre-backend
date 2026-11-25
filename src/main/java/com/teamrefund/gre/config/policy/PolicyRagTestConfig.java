@@ -21,13 +21,8 @@ class PolicyRagTestConfig {
     var matcher = PathPatternRequestMatcher.withDefaults();
     var testRoute = matcher.matcher(HttpMethod.GET, "/rag");
     var ingestionRoute = matcher.matcher(HttpMethod.POST, "/rag/ingest");
-    var evaluationRoute = matcher.matcher(HttpMethod.POST, "/rag/evaluate");
-    var batchEvaluationRoute = matcher.matcher(HttpMethod.POST, "/rag/evaluate/batch");
-    return http.securityMatcher(
-            new OrRequestMatcher(testRoute, ingestionRoute, evaluationRoute, batchEvaluationRoute))
-        .csrf(
-            csrf ->
-                csrf.ignoringRequestMatchers(ingestionRoute, evaluationRoute, batchEvaluationRoute))
+    return http.securityMatcher(new OrRequestMatcher(testRoute, ingestionRoute))
+        .csrf(csrf -> csrf.ignoringRequestMatchers(ingestionRoute))
         .authorizeHttpRequests(requests -> requests.anyRequest().hasRole("GMAIL_TEST"))
         .httpBasic(Customizer.withDefaults())
         .build();

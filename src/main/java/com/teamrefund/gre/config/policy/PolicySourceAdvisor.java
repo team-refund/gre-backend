@@ -17,16 +17,10 @@ public class PolicySourceAdvisor implements BaseAdvisor {
   @Override
   public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
     Object documents = request.context().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
-    return request
-        .mutate()
-        .prompt(
-            request
-                .prompt()
-                .augmentUserMessage(
-                    request.prompt().getUserMessage().getText()
-                        + "\n\n출처가 포함된 정책 문서:\n"
-                        + documents))
-        .build();
+    var prompt = request.prompt();
+    String userMessage = prompt.getUserMessage().getText();
+    String messageWithSources = userMessage + "\n\n출처가 포함된 정책 문서:\n" + documents;
+    return request.mutate().prompt(prompt.augmentUserMessage(messageWithSources)).build();
   }
 
   @Override
