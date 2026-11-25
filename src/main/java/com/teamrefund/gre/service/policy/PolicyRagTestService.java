@@ -20,12 +20,12 @@ public class PolicyRagTestService {
   private final JsonMapper jsonMapper;
 
   public PolicyRagBatchEvaluationResponse evaluateBatch(
-      List<String> questions, double similarityThreshold, int topK, String platform, String site) {
+      List<String> questions, double similarityThreshold, int topK, String platform) {
     int relevancyPassed = 0;
     int factCheckingPassed = 0;
     int bothPassed = 0;
     for (String question : questions) {
-      var evaluation = evaluate(question, similarityThreshold, topK, platform, site);
+      var evaluation = evaluate(question, similarityThreshold, topK, platform);
       relevancyPassed += evaluation.relevancyPassed() ? 1 : 0;
       factCheckingPassed += evaluation.factCheckingPassed() ? 1 : 0;
       bothPassed += evaluation.relevancyPassed() && evaluation.factCheckingPassed() ? 1 : 0;
@@ -42,9 +42,9 @@ public class PolicyRagTestService {
   }
 
   public PolicyRagEvaluationResponse evaluate(
-      String question, double similarityThreshold, int topK, String platform, String site) {
+      String question, double similarityThreshold, int topK, String platform) {
     var review =
-        policyRagService.reviewWithDocuments(question, similarityThreshold, topK, platform, site);
+        policyRagService.reviewWithDocuments(question, similarityThreshold, topK, platform);
     var evidence =
         review.documents().stream()
             .map(document -> new Document(document.getMetadata() + "\n" + document.getText()))

@@ -17,7 +17,7 @@ public record PolicyRagResult(Status status, List<Clause> clauses, String note) 
   }
 
   public record Clause(
-      String quoteEn, String section, Source source, Applicability applicability) {}
+      String quoteEn, String section, Source source, Applicability applicability, String summary) {}
 
   public record Source(String platform, String site, String policyTitle, String sourceUrl) {}
 }

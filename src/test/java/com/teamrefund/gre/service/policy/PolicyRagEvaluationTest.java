@@ -38,7 +38,7 @@ class PolicyRagEvaluationTest {
         Double.parseDouble(System.getenv().getOrDefault("GRE_RAG_EVALUATION_THRESHOLD", "0.0"));
 
     PolicyRagEvaluationResponse evaluation =
-        policyRagTestService.evaluate(QUESTION, threshold, topK, "EBAY", "ebay.com");
+        policyRagTestService.evaluate(QUESTION, threshold, topK, "EBAY");
     saveReport(topK, threshold, evaluation);
   }
 
