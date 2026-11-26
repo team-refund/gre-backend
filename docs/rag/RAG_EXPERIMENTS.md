@@ -268,3 +268,96 @@ HTTP 200 · `EVIDENCE_INSUFFICIENT` · 반환 조항 5개
 3위 청크는 상품 설명과 다른 경우 판매자가 반품 불가로 표시했어도 반품할 수 있다는 근거를 반환했다. 2위 청크는 교환이나 대체품이 판매자가 제시할 수 있는 선택지임을 보여줬다. 최초 배송비를 포함한 전액 환불과 판매자의 반품 배송비 부담을 함께 명시한 청크는 1위였고, 게스트 구매 안내에서 검색됐다. 질의에는 게스트 결제 여부가 없었다.
 
 상위 5개에 Money Back Guarantee의 상품 불일치 반품 접수 기한이나 국제 반송 수단에 관한 청크가 포함되지 않았다. 응답은 수령 12일째가 기한 내인지와 한국에서의 구체적인 반송 방식을 미확인 사항으로 남겼다.
+
+
+## 정제 HTML 검증 · 나머지 해외직구 질의 4건 · 2026-11-26
+
+로컬 백엔드에서 개발 로그인 세션으로 아래 질의를 각각 한 번씩 실행했다. 정제 HTML 22개와 청크 146개를 대상으로 첫 질의와 동일하게 `platform=EBAY`, `topK=5`, `similarityThreshold=0.0`을 적용했다.
+
+### 질의 2 · 단순 변심과 사이즈 교환
+
+> 미국 eBay 판매자가 한국으로 직접 배송한 재킷을 수령한 지 8일 됐습니다. 주문한 사이즈와 설명은 정확하지만 입어보니 작습니다. 상품 페이지에 ‘30일 반품 가능, 반품 배송비 구매자 부담’이라고 적혀 있습니다. 다른 사이즈로 교환해 달라고 할 수 있나요? 반품하면 최초 배송비도 돌려받나요?
+
+HTTP 200 · EVIDENCE_INSUFFICIENT · 반환 조항 5개
+
+| 순위 | 정책 문서 | 청크 ID | 유사도 | 적용 판단 |
+|---:|---|---|---:|---|
+| 1 | [Return an item for a refund](https://www.ebay.com/help/buying/returns/refunds/item-not-as-described-policy?id=4041) | `4a6b92ff-3ebf-4f13-af8a-2746d993fba0` | 0.472321 | `NOT_APPLICABLE` |
+| 2 | [Get help if you bought as a guest](https://www.ebay.com/help/buying/returns-refunds/returning-item/returning-items-bought-guest?id=4065) | `b7bdd4a6-9f45-44e5-88d9-ba3987ddb2ff` | 0.453620 | `APPLICABLE` |
+| 3 | [Get help if you bought as a guest](https://www.ebay.com/help/buying/returns-refunds/returning-item/returning-items-bought-guest?id=4065) | `ddf2ad28-5f70-4b47-b7ca-a7f228124122` | 0.450435 | `APPLICABLE` |
+| 4 | [Return an item for a refund](https://www.ebay.com/help/buying/returns/refunds/item-not-as-described-policy?id=4041) | `6829845e-3c3d-4cb4-a0bc-a75c322e72fb` | 0.442368 | `UNCERTAIN` |
+| 5 | [eBay International Shipping - Buyer Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/buyer/terms/) | `010641a4-7898-48ce-b397-703242dfb7e6` | 0.439553 | `UNCERTAIN` |
+
+#### 실제 응답의 searchNote
+
+> 상품 페이지의 30일 반품 조건에 따라 8일째인 지금 반품을 요청할 근거는 있으며, 국제 배송 프로그램 주문이라면 배송일부터 30일 이내 요청과 마음 변경 반송비 구매자 부담 규정이 있습니다. 교환은 판매자가 제안할 수 있을 뿐 보장되지 않고, 최초 배송비 환불 규정은 설명 불일치·결함·파손 반품에 명시되어 있어 단순히 사이즈가 맞지 않는 이 경우의 환불 여부는 확인되지 않습니다.
+
+#### 검색 결과 평가
+
+1위는 설명 불일치 조항으로 이 질의에 적용되지 않았다. 2~3위 게스트 구매 안내에서 판매자 반품 조건과 교환 제안을 찾았다. 5위 eIS 약관은 판매자 직접 배송 조건에 맞지 않는다. 단순 변심 반품의 최초 배송비를 직접 판단할 청크는 상위 5개에 없었다.
+
+### 질의 3 · eIS 구성품 누락
+
+> 주문 상세에 eBay International Shipping으로 표시된 미국발 상품을 한국에서 받았는데 구성품이 빠져 있습니다. 수령 18일째이고 판매자는 교체품을 직접 보내줄 수 없다고 합니다. 누구에게 반품이나 환불을 요청해야 하며, 교체품 발송도 요구할 수 있나요?
+
+HTTP 200 · EVIDENCE_SUFFICIENT · 반환 조항 5개
+
+| 순위 | 정책 문서 | 청크 ID | 유사도 | 적용 판단 |
+|---:|---|---|---:|---|
+| 1 | [Get help if you bought as a guest](https://www.ebay.com/help/buying/returns-refunds/returning-item/returning-items-bought-guest?id=4065) | `b7bdd4a6-9f45-44e5-88d9-ba3987ddb2ff` | 0.488246 | `UNCERTAIN` |
+| 2 | [eBay International Shipping - Buyer Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/buyer/terms/) | `010641a4-7898-48ce-b397-703242dfb7e6` | 0.486075 | `APPLICABLE` |
+| 3 | [eBay International Shipping - Buyer Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/buyer/terms/) | `da4a9608-9c37-43f0-b0ec-71dd61a08b91` | 0.485053 | `APPLICABLE` |
+| 4 | [Return an item for a refund](https://www.ebay.com/help/buying/returns/refunds/item-not-as-described-policy?id=4041) | `6829845e-3c3d-4cb4-a0bc-a75c322e72fb` | 0.472561 | `UNCERTAIN` |
+| 5 | [eBay International Shipping Seller Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/seller/terms/) | `5bfdc014-677b-4c1c-af27-c8e289ecb105` | 0.470751 | `NOT_APPLICABLE` |
+
+#### 실제 응답의 searchNote
+
+> 검색된 EIS 약관에 따르면 미국발 EIS 상품은 실제 배송일부터 30일 안에 반품을 요청할 수 있고, 국제 반품은 판매자가 아니라 eBay가 처리·응답합니다. 18일째라면 기간 내 요청이 가능하지만 환불은 검사와 승인에 달려 있으며, 교체품은 판매자가 제안할 수 있을 뿐 구매자가 발송을 강제할 근거는 검색된 정책에 없습니다.
+
+#### 검색 결과 평가
+
+2~3위 eIS 구매자 약관에서 실제 배송 후 30일 접수, eBay의 반품 처리, 라벨 제공, 검수 후 환불 근거가 검색됐다. 4위 일반 반품 안내는 교체가 판매자의 선택지임을 뒷받침하지만 eIS 주문에서 교체 발송을 강제할 근거는 제공하지 않았다.
+
+### 질의 4 · 제3자 배대지와 구매자 보호
+
+> 미국 eBay에서 중고 카메라를 구매해 제가 선택한 미국 배대지로 보낸 뒤 한국에서 받았습니다. 배대지에는 배송 완료됐지만 한국에서 개봉하니 상품 설명에 없던 렌즈 파손이 확인됐습니다. 판매자에게 환불을 요청할 때 eBay Money Back Guarantee를 적용받을 수 있나요?
+
+HTTP 200 · EVIDENCE_SUFFICIENT · 반환 조항 5개
+
+| 순위 | 정책 문서 | 청크 ID | 유사도 | 적용 판단 |
+|---:|---|---|---:|---|
+| 1 | [eBay International Shipping Seller Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/seller/terms/) | `5bfdc014-677b-4c1c-af27-c8e289ecb105` | 0.500551 | `UNCERTAIN` |
+| 2 | [eBay Money Back Guarantee policy](https://www.ebay.com/help/policies/ebay/ebay?id=4210) | `9fe730cd-ed84-4ed4-adf2-543102c93aa5` | 0.499626 | `UNCERTAIN` |
+| 3 | [eBay Money Back Guarantee policy](https://www.ebay.com/help/policies/ebay/ebay?id=4210) | `156f28ea-ff16-498c-be2e-2fc4aef5c3de` | 0.491886 | `UNCERTAIN` |
+| 4 | [eBay Money Back Guarantee policy](https://www.ebay.com/help/policies/ebay/ebay?id=4210) | `06ef1fe4-d9d2-4abf-96e2-43ea2a63f3d1` | 0.485033 | `UNCERTAIN` |
+| 5 | [eBay Money Back Guarantee policy](https://www.ebay.com/help/policies/ebay/ebay?id=4210) | `3cbade8f-4033-4be5-9a7e-ea5047e4fa55` | 0.482306 | `UNCERTAIN` |
+
+#### 실제 응답의 searchNote
+
+> 설명에 없던 렌즈 파손은 리스팅과 다른 상품에 해당할 수 있어, 자격 요건을 충족하면 판매자에게 반품·환불 해결을 요청할 근거가 있습니다. 그러나 제3자 배대지 이용은 해당 사유의 보장에서 제외될 수 있고, eBay 프로그램 배송인지·결제 및 요청 기한 요건 충족 여부가 확인되지 않아 환불을 보장할 수는 없습니다.
+
+#### 검색 결과 평가
+
+5위 Money Back Guarantee 청크에서 제3자 배송대행의 상품 불일치 보호 제외와 eBay 공식 프로그램 예외를 모두 찾았다. 응답은 사용자가 선택한 배대지라는 진술을 충분히 반영하지 않고 eIS 가능성을 열어뒀다. 근거 검색의 성공과 해당 근거를 배송 경로에 적용하는 판단의 정확도를 구분할 필요가 있다.
+
+### 질의 5 · 국제 반품 라벨과 배송 증빙
+
+> 미국 eBay 판매자가 한국으로 직접 배송한 820달러짜리 기기가 작동하지 않아 반품을 접수했습니다. 판매자는 반품을 승인했지만, 접수 후 영업일 4일이 지나도 한국에서 쓸 수 있는 라벨을 주지 않았습니다. 제가 먼저 국제 반송비를 결제하면 돌려받을 수 있나요? eBay 개입은 언제 요청할 수 있고, 반송 시 어떤 배송 증빙이 필요한가요?
+
+HTTP 200 · EVIDENCE_SUFFICIENT · 반환 조항 5개
+
+| 순위 | 정책 문서 | 청크 ID | 유사도 | 적용 판단 |
+|---:|---|---|---:|---|
+| 1 | [eBay International Shipping - Buyer Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/buyer/terms/) | `010641a4-7898-48ce-b397-703242dfb7e6` | 0.548385 | `UNCERTAIN` |
+| 2 | [Return shipping for buyers](https://www.ebay.com/help/buying/returns-refunds/returning-item/return-shipping?id=4066) | `994c0415-1ca9-4f46-b4c0-cd6de32cb0ba` | 0.544070 | `APPLICABLE` |
+| 3 | [Return an item for a refund](https://www.ebay.com/help/buying/returns/refunds/item-not-as-described-policy?id=4041) | `545eb687-aded-4011-ba2f-0c5f55c10bc6` | 0.543908 | `APPLICABLE` |
+| 4 | [Return shipping for buyers](https://www.ebay.com/help/buying/returns-refunds/returning-item/return-shipping?id=4066) | `9b595379-57c6-41d3-a6c0-45ac0047da77` | 0.543133 | `APPLICABLE` |
+| 5 | [eBay International Shipping Seller Terms & Conditions](https://pages.ebay.com/internationalshippingprogram/seller/terms/) | `5bfdc014-677b-4c1c-af27-c8e289ecb105` | 0.540261 | `NOT_APPLICABLE` |
+
+#### 실제 응답의 searchNote
+
+> 판매자 부담 반품이라면 반송비를 판매자가 부담해야 하며, 승인 후 라벨을 주지 않은 경우 영업일 3일 이후 eBay 개입을 요청할 수 있고, 820달러 상품은 추적 및 서명 확인 배송을 사용해야 한다는 점은 근거가 있습니다. 다만 국제 반송비를 먼저 결제하면 상환된다는 보장은 확인되지 않았으므로, 반송 전에 판매자와 운송 방식·비용을 합의하거나 eBay에 개입을 요청하는 편이 안전합니다.
+
+#### 검색 결과 평가
+
+2~4위에서 판매자의 반송 수단 제공, 라벨 미제공 시 eBay 개입, 대체 배송 비용 사전 합의, 750달러 이상 추적·서명 확인 근거를 찾았다. 선결제한 국제 운임의 자동 상환은 확인되지 않았다. 1·5위 eIS 약관은 판매자 직접 배송 조건에 맞지 않았다.
