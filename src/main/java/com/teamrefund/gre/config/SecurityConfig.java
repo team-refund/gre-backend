@@ -61,6 +61,7 @@ class SecurityConfig {
                   .permitAll()
                   .requestMatchers("/api/gmail/**")
                   .hasRole("GMAIL_TEST")
+                  // 컨트롤러에 등록한 경로도 인가 규칙에 포함되기 전에는 여기서 차단됩니다.
                   .anyRequest()
                   .denyAll();
             })
