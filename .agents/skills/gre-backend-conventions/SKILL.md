@@ -34,6 +34,7 @@ description: GRE 백엔드의 Java 21, Spring Boot, MyBatis, Spring AI 코드 �
 ## 오류 응답과 AI Run
 
 - Service는 `BusinessException(ErrorCode)`를 발생시키고 `GlobalExceptionHandler`의 `@RestControllerAdvice`가 HTTP 응답으로 변환한다. Controller에 업무 예외 처리를 반복하지 않는다. 외부 호출의 복구·재시도·상태 기록은 해당 Service 또는 AI 실행 계층에서 담당한다.
+- 특정 API에서 리다이렉트 등 별도 응답이 필요하면 `exception` 패키지에 용도가 드러나는 전용 예외 클래스를 선언한다. Service에서 해당 예외를 던지고, 해당 Controller의 `@ExceptionHandler`에서 그 타입만 처리할 수 있다. 공통 업무 예외는 전역 핸들러에 위임한다.
 - 공통 오류 응답 `ErrorResponse`는 `code`, 안전한 한국어 `message`, 후속 `action`, `retryable`, `fieldErrors`, `path`, ISO-8601 `timestamp`를 제공한다. 필드 오류가 없으면 `fieldErrors`는 null이며 `path`에는 쿼리와 토큰을 넣지 않는다. `retryable`은 작업의 재시도 안전성을 나타낸다. 정상 응답은 API별 계약을 따른다.
 - DTO 검증 오류와 잘못된 JSON은 안전한 400 응답으로 매핑한다. Security Filter Chain 오류도 `AuthenticationEntryPoint`와 `AccessDeniedHandler`에서 같은 형식을 사용한다. 예상치 못한 오류는 서버에서 원인과 추적 ID를 기록하고 500 `INTERNAL_SERVER_ERROR`로 응답한다. 응답에 외부 API 원문·OAuth 토큰·개인정보·스택 트레이스를 포함하지 않는다.
 - HTTP 상태·오류 코드·후속 조치는 기존 코드와 Notion의 확정 매핑을 확인한다. 새 매핑이 필요하면 프론트와 공유하는 계약으로 관리한다.

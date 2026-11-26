@@ -1,16 +1,20 @@
 package com.teamrefund.gre.controller.gmail;
 
+import com.teamrefund.gre.dto.request.gmail.CreateGmailDraftRequest;
 import com.teamrefund.gre.dto.response.gmail.GmailConnectionResponse;
 import com.teamrefund.gre.dto.response.gmail.GmailMessageSearchResponse;
 import com.teamrefund.gre.exception.BusinessException;
 import com.teamrefund.gre.exception.ErrorCode;
 import com.teamrefund.gre.service.gmail.GmailAuthorizationService;
 import com.teamrefund.gre.service.gmail.GmailConnectionService;
+import com.teamrefund.gre.service.gmail.GmailDraftService;
 import com.teamrefund.gre.service.gmail.GmailMessageService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import java.net.URI;
 import java.security.Principal;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,7 @@ import org.springframework.security.oauth2.client.web.HttpSessionOAuth2Authoriza
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,12 +34,17 @@ public class GmailConnectionController {
   private final GmailConnectionService gmailConnectionService;
   private final GmailAuthorizationService gmailAuthorizationService;
   private final GmailMessageService gmailMessageService;
+  private final GmailDraftService gmailDraftService;
   private final HttpSessionOAuth2AuthorizationRequestRepository authorizationRequests;
 
   // 연결된 Gmail 계정에 이메일 초안을 생성합니다.
   @PostMapping("/drafts")
-  public ResponseEntity<Void> createDraft() {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<Map<String, String>> createDraft(
+      Principal principal, @Valid @RequestBody CreateGmailDraftRequest request) {
+    var draftId =
+        gmailDraftService.createDraft(
+            principal.getName(), request.getTo(), request.getSubject(), request.getBody());
+    return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("draftId", draftId));
   }
 
   // 기존 Gmail 연결의 재연동을 시작합니다.

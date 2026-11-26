@@ -11,13 +11,18 @@ public enum ErrorCode {
   FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
   GMAIL_OAUTH_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Gmail 연결 설정을 확인할 수 없습니다."),
   GMAIL_OAUTH_INVALID(HttpStatus.BAD_REQUEST, "Gmail 동의 요청이 유효하지 않거나 거절되었습니다."),
-  GMAIL_SCOPE_REQUIRED(HttpStatus.BAD_REQUEST, "Gmail 읽기 및 발송 권한이 필요합니다."),
+  GMAIL_SCOPE_REQUIRED(HttpStatus.BAD_REQUEST, "Gmail 읽기 및 작성 권한이 필요합니다."),
   GMAIL_REFRESH_TOKEN_REQUIRED(HttpStatus.BAD_REQUEST, "Gmail을 다시 연결해 주세요."),
   GMAIL_PROFILE_LOOKUP_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 계정을 확인하지 못했습니다."),
   GMAIL_TOKEN_EXCHANGE_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 인증을 완료하지 못했습니다."),
   GMAIL_NOT_CONNECTED(HttpStatus.CONFLICT, "Gmail을 먼저 연결해 주세요."),
   GMAIL_REAUTH_REQUIRED(HttpStatus.CONFLICT, "Gmail을 다시 연결해 주세요."),
-  GMAIL_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 메일을 조회하지 못했습니다.");
+  GMAIL_TOKEN_REFRESH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 인증을 갱신하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+  GMAIL_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 메일을 조회하지 못했습니다."),
+  GMAIL_DRAFT_CREATE_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 초안 저장 결과를 확인하지 못했습니다."),
+  GMAIL_THREAD_ALREADY_LINKED(HttpStatus.CONFLICT, "다른 사건에 연결된 Gmail 스레드입니다."),
+  GMAIL_THREAD_MERCHANT_MISMATCH(HttpStatus.BAD_REQUEST, "사업자 이메일이 스레드의 송수신 내역에 없습니다."),
+  INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 내용을 확인해 주세요.");
   private final HttpStatus status;
   private final String message;
 }

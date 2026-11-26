@@ -5,11 +5,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
 import org.springframework.web.client.RestClient;
 
 @Configuration(proxyBeanMethods = false)
 class GmailOAuthConfig {
+  @Bean
+  RestClientRefreshTokenTokenResponseClient gmailRefreshTokenClient() {
+    return new RestClientRefreshTokenTokenResponseClient();
+  }
+
   @Bean
   RestClient gmailApiClient() {
     var factory = new SimpleClientHttpRequestFactory();

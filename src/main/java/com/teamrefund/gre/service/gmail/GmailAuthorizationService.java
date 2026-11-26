@@ -1,6 +1,5 @@
 package com.teamrefund.gre.service.gmail;
 
-import com.teamrefund.gre.entity.gmail.GmailConnectionStatus;
 import com.teamrefund.gre.exception.BusinessException;
 import com.teamrefund.gre.exception.ErrorCode;
 import java.time.Duration;
@@ -32,8 +31,7 @@ public class GmailAuthorizationService {
   private static final Duration AUTHORIZATION_TIMEOUT = Duration.ofMinutes(10);
   private static final Set<String> GMAIL_SCOPES =
       Set.of(
-          "https://www.googleapis.com/auth/gmail.readonly",
-          "https://www.googleapis.com/auth/gmail.send");
+          "https://www.googleapis.com/auth/gmail.readonly", GmailAccessTokenService.COMPOSE_SCOPE);
 
   private final GmailConnectionService gmailConnectionService;
   private final String clientId;
@@ -75,9 +73,7 @@ public class GmailAuthorizationService {
             .additionalParameters(
                 parameters -> {
                   parameters.put("access_type", "offline");
-                  if (connection.getStatus() != GmailConnectionStatus.CONNECTED) {
-                    parameters.put("prompt", "consent");
-                  }
+                  parameters.put("prompt", "consent");
                 })
             .attributes(
                 attributes -> {
