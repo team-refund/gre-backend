@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
@@ -21,6 +23,7 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationExch
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
@@ -28,6 +31,7 @@ import org.springframework.web.client.RestClientResponseException;
 @Service
 @Slf4j
 public class GmailAuthorizationService {
+  private static final String GOOGLE_REVOCATION_URI = "https://oauth2.googleapis.com/revoke";
   private static final Duration AUTHORIZATION_TIMEOUT = Duration.ofMinutes(10);
   private static final Set<String> GMAIL_SCOPES =
       Set.of(
@@ -38,31 +42,49 @@ public class GmailAuthorizationService {
   private final String clientSecret;
   private final String redirectUri;
   private final RestClientAuthorizationCodeTokenResponseClient tokenClient;
-  private final RestClient profileClient;
+  private final RestClient googleClient;
   private final GmailTokenStorageService tokenStorageService;
+  private final GmailTokenCipher tokenCipher;
 
   public GmailAuthorizationService(
       GmailConnectionService gmailConnectionService,
       RestClientAuthorizationCodeTokenResponseClient tokenClient,
-      @Qualifier("gmailApiClient") RestClient profileClient,
+      @Qualifier("gmailApiClient") RestClient googleClient,
       GmailTokenStorageService tokenStorageService,
+      GmailTokenCipher tokenCipher,
       @Value("${gre.gmail.oauth.client-id}") String clientId,
       @Value("${gre.gmail.oauth.client-secret}") String clientSecret,
       @Value("${gre.gmail.oauth.redirect-uri}") String redirectUri) {
     this.gmailConnectionService = gmailConnectionService;
     this.tokenClient = tokenClient;
-    this.profileClient = profileClient;
+    this.googleClient = googleClient;
     this.tokenStorageService = tokenStorageService;
+    this.tokenCipher = tokenCipher;
     this.clientId = clientId;
     this.clientSecret = clientSecret;
     this.redirectUri = redirectUri;
   }
 
+  /** 현재 사용자의 Gmail OAuth 동의 요청을 시작합니다. */
   public OAuth2AuthorizationRequest startAuthorization(String loginId) {
+    var connection = gmailConnectionService.getConnection(loginId);
+    return createAuthorizationRequest(connection.getUserId());
+  }
+
+  /** 기존 연결을 확인한 뒤 새 OAuth 동의 요청을 만듭니다. */
+  public OAuth2AuthorizationRequest startReconnect(String loginId) {
+    var connection = gmailConnectionService.getConnection(loginId);
+    if (connection.getId() == null) {
+      throw new BusinessException(ErrorCode.GMAIL_NOT_CONNECTED);
+    }
+    return createAuthorizationRequest(connection.getUserId());
+  }
+
+  /** 사용자 검증 정보와 PKCE를 포함한 OAuth 동의 요청을 조립합니다. */
+  private OAuth2AuthorizationRequest createAuthorizationRequest(long userId) {
     if (clientId.isBlank() || clientSecret.isBlank()) {
       throw new BusinessException(ErrorCode.GMAIL_OAUTH_UNAVAILABLE);
     }
-    var connection = gmailConnectionService.getConnection(loginId);
     var builder =
         OAuth2AuthorizationRequest.authorizationCode()
             .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
@@ -77,13 +99,46 @@ public class GmailAuthorizationService {
                 })
             .attributes(
                 attributes -> {
-                  attributes.put("greUserId", connection.getUserId());
+                  attributes.put("greUserId", userId);
                   attributes.put("startedAt", Instant.now());
                 });
     OAuth2AuthorizationRequestCustomizers.withPkce().accept(builder);
     return builder.build();
   }
 
+  /** 로컬 연결과 토큰을 정리한 뒤 Google 권한 철회를 시도합니다. */
+  public boolean disconnect(String loginId) {
+    var connection = gmailConnectionService.getConnection(loginId);
+    var client = tokenStorageService.disconnect(loginId, connection.getUserId());
+    if (client == null) {
+      return false;
+    }
+
+    try {
+      var refreshToken = client.getRefreshTokenValue();
+      var token =
+          refreshToken == null
+              ? tokenCipher.decrypt(
+                  client.getAccessTokenValue(), client.getPrincipalName() + ":access")
+              : tokenCipher.decrypt(refreshToken, client.getPrincipalName() + ":refresh");
+      var form = new LinkedMultiValueMap<String, String>();
+      form.add("token", token);
+      var result =
+          googleClient
+              .post()
+              .uri(GOOGLE_REVOCATION_URI)
+              .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+              .body(form)
+              .retrieve()
+              .toBodilessEntity();
+      return result.getStatusCode().value() == HttpStatus.OK.value();
+    } catch (BusinessException | RestClientException exception) {
+      log.warn("Google OAuth revocation could not be confirmed");
+      return false;
+    }
+  }
+
+  /** 동의를 시작한 사용자와 유효 시간을 확인하고 Google 토큰을 저장합니다. */
   public void exchangeCode(String loginId, OAuth2AuthorizationRequest authorization, String code) {
     var connection = gmailConnectionService.getConnection(loginId);
     Instant startedAt = authorization.getAttribute("startedAt");
@@ -122,10 +177,11 @@ public class GmailAuthorizationService {
     }
   }
 
+  /** Gmail 프로필에서 연결 계정의 이메일을 확인합니다. */
   private String fetchGoogleEmail(String accessToken) {
     try {
       var profile =
-          profileClient
+          googleClient
               .get()
               .uri("/gmail/v1/users/me/profile")
               .headers(headers -> headers.setBearerAuth(accessToken))

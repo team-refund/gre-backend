@@ -2,7 +2,10 @@ package com.teamrefund.gre.controller.gmail;
 
 import com.teamrefund.gre.dto.request.gmail.CreateGmailDraftRequest;
 import com.teamrefund.gre.dto.response.gmail.GmailConnectionResponse;
+import com.teamrefund.gre.dto.response.gmail.GmailDisconnectResponse;
 import com.teamrefund.gre.dto.response.gmail.GmailMessageSearchResponse;
+import com.teamrefund.gre.dto.response.gmail.GmailReconnectResponse;
+import com.teamrefund.gre.entity.gmail.GmailConnectionStatus;
 import com.teamrefund.gre.exception.BusinessException;
 import com.teamrefund.gre.exception.ErrorCode;
 import com.teamrefund.gre.service.gmail.GmailAuthorizationService;
@@ -15,7 +18,8 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
@@ -29,13 +33,29 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/gmail")
-@RequiredArgsConstructor
 public class GmailConnectionController {
   private final GmailConnectionService gmailConnectionService;
   private final GmailAuthorizationService gmailAuthorizationService;
   private final GmailMessageService gmailMessageService;
   private final GmailDraftService gmailDraftService;
   private final HttpSessionOAuth2AuthorizationRequestRepository authorizationRequests;
+
+  private final URI successRedirectUri;
+
+  public GmailConnectionController(
+      GmailConnectionService gmailConnectionService,
+      GmailAuthorizationService gmailAuthorizationService,
+      GmailMessageService gmailMessageService,
+      GmailDraftService gmailDraftService,
+      HttpSessionOAuth2AuthorizationRequestRepository authorizationRequests,
+      @Value("${gre.gmail.oauth.success-redirect-uri}") String successRedirectUri) {
+    this.gmailConnectionService = gmailConnectionService;
+    this.gmailAuthorizationService = gmailAuthorizationService;
+    this.gmailMessageService = gmailMessageService;
+    this.gmailDraftService = gmailDraftService;
+    this.authorizationRequests = authorizationRequests;
+    this.successRedirectUri = successRedirectUri.isBlank() ? null : URI.create(successRedirectUri);
+  }
 
   // 연결된 Gmail 계정에 이메일 초안을 생성합니다.
   @PostMapping("/drafts")
@@ -49,14 +69,20 @@ public class GmailConnectionController {
 
   // 기존 Gmail 연결의 재연동을 시작합니다.
   @PostMapping("/connection/reconnect")
-  public ResponseEntity<Void> reconnect() {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<GmailReconnectResponse> reconnect(
+      Principal principal, HttpServletRequest request, HttpServletResponse response) {
+    var authorization = gmailAuthorizationService.startReconnect(principal.getName());
+    authorizationRequests.saveAuthorizationRequest(authorization, request, response);
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .body(new GmailReconnectResponse(authorization.getAuthorizationRequestUri()));
   }
 
   // Gmail 계정 연결을 해제합니다.
   @DeleteMapping("/connection")
-  public ResponseEntity<Void> disconnect() {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public GmailDisconnectResponse disconnect(Principal principal) {
+    var revokeConfirmed = gmailAuthorizationService.disconnect(principal.getName());
+    return new GmailDisconnectResponse(GmailConnectionStatus.DISCONNECTED, revokeConfirmed);
   }
 
   // 현재 Gmail 연동 상태를 조회합니다.
@@ -113,6 +139,9 @@ public class GmailConnectionController {
       throw new BusinessException(ErrorCode.GMAIL_OAUTH_INVALID);
     }
     gmailAuthorizationService.exchangeCode(principal.getName(), authorization, code);
+    if (successRedirectUri != null) {
+      return ResponseEntity.status(HttpStatus.SEE_OTHER).location(successRedirectUri).build();
+    }
     return ResponseEntity.ok("Gmail connection saved.");
   }
 }

@@ -73,6 +73,38 @@ class GmailTokenStorageServiceTest {
     verify(dao, never()).upsertConnection(anyLong(), anyString(), anyString());
   }
 
+  @Test
+  void clearsConnectionReferenceBeforeDeletingTheStoredClient() {
+    var principal = "gre-user:42";
+    var connection = new GmailConnection();
+    connection.setStatus(GmailConnectionStatus.REAUTH_REQUIRED);
+    connection.setOauthClientRegistrationId("gmail");
+    connection.setOauthPrincipalName(principal);
+    var client = new GmailAuthorizedClient();
+    when(dao.lockActiveUser(USER_ID, LOGIN_ID)).thenReturn(USER_ID);
+    when(dao.findForActiveUser(LOGIN_ID)).thenReturn(connection);
+    when(dao.findAuthorizedClient(principal)).thenReturn(client);
+
+    assertThat(service.disconnect(LOGIN_ID, USER_ID)).isSameAs(client);
+
+    var writes = inOrder(dao);
+    writes.verify(dao).disconnect(USER_ID);
+    writes.verify(dao).deleteAuthorizedClient(principal);
+  }
+
+  @Test
+  void skipsTokenDeletionWhenAlreadyDisconnected() {
+    var connection = new GmailConnection();
+    connection.setStatus(GmailConnectionStatus.DISCONNECTED);
+    when(dao.lockActiveUser(USER_ID, LOGIN_ID)).thenReturn(USER_ID);
+    when(dao.findForActiveUser(LOGIN_ID)).thenReturn(connection);
+
+    assertThat(service.disconnect(LOGIN_ID, USER_ID)).isNull();
+
+    verify(dao, never()).disconnect(anyLong());
+    verify(dao, never()).deleteAuthorizedClient(anyString());
+  }
+
   private OAuth2AccessTokenResponse.Builder accessTokenResponse() {
     return OAuth2AccessTokenResponse.withToken("test-access-token")
         .tokenType(OAuth2AccessToken.TokenType.BEARER)
