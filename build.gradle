@@ -26,6 +26,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-webclient'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.eclipse.angus:angus-mail'
+    implementation 'org.jsoup:jsoup:1.24.1'
 
     // 인증·인가 및 OAuth2 클라이언트
     implementation 'org.springframework.boot:spring-boot-starter-security'

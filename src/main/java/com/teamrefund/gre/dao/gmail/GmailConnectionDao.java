@@ -15,6 +15,9 @@ public interface GmailConnectionDao {
 
   void upsertAuthorizedClient(GmailAuthorizedClient client);
 
+  void updateReauthRequired(
+      @Param("userId") long userId, @Param("principalName") String principalName);
+
   void upsertConnection(
       @Param("userId") long userId,
       @Param("googleEmail") String googleEmail,

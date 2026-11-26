@@ -86,4 +86,12 @@
             oauth_principal_name = EXCLUDED.oauth_principal_name,
             updated_at = now()
     </insert>
+    <update id="updateReauthRequired">
+        UPDATE gmail_connections
+        SET status = 'REAUTH_REQUIRED', updated_at = now()
+        WHERE user_id = #{userId}
+          AND oauth_client_registration_id = 'gmail'
+          AND oauth_principal_name = #{principalName}
+          AND status = 'CONNECTED'
+    </update>
 </mapper>

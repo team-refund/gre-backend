@@ -1,9 +1,7 @@
 package com.teamrefund.gre.service.gmail;
 
-import com.teamrefund.gre.dao.gmail.GmailConnectionDao;
 import com.teamrefund.gre.dto.query.gmail.GmailMessageSearchResult;
 import com.teamrefund.gre.dto.query.gmail.GmailMessageSummary;
-import com.teamrefund.gre.entity.gmail.GmailConnectionStatus;
 import com.teamrefund.gre.exception.BusinessException;
 import com.teamrefund.gre.exception.ErrorCode;
 import java.net.URI;
@@ -24,24 +22,18 @@ public class GmailMessageService {
   private static final String MESSAGES_PATH = "/gmail/v1/users/me/messages";
   private static final int PAGE_SIZE = 10;
 
-  private final GmailConnectionService connectionService;
-  private final GmailConnectionDao connectionDao;
-  private final GmailTokenCipher tokenCipher;
+  private final GmailAccessTokenService accessTokenService;
   private final RestClient gmailClient;
 
   public GmailMessageService(
-      GmailConnectionService connectionService,
-      GmailConnectionDao connectionDao,
-      GmailTokenCipher tokenCipher,
+      GmailAccessTokenService accessTokenService,
       @Qualifier("gmailApiClient") RestClient gmailClient) {
-    this.connectionService = connectionService;
-    this.connectionDao = connectionDao;
-    this.tokenCipher = tokenCipher;
+    this.accessTokenService = accessTokenService;
     this.gmailClient = gmailClient;
   }
 
   public GmailMessageSearchResult search(String loginId, String query, String pageToken) {
-    var token = getAccessToken(loginId);
+    var token = accessTokenService.getReadToken(loginId);
     try {
       var page = fetchMessagePage(token, query, pageToken);
       var messages = new ArrayList<GmailMessageSummary>();
@@ -86,26 +78,6 @@ public class GmailMessageService {
       parameters.put("pageToken", pageToken);
     }
     return builder.build(parameters);
-  }
-
-  private String getAccessToken(String loginId) {
-    var connection = connectionService.getConnection(loginId);
-    if (connection.getStatus() == GmailConnectionStatus.REAUTH_REQUIRED) {
-      throw new BusinessException(ErrorCode.GMAIL_REAUTH_REQUIRED);
-    }
-    if (connection.getStatus() != GmailConnectionStatus.CONNECTED) {
-      throw new BusinessException(ErrorCode.GMAIL_NOT_CONNECTED);
-    }
-    var principalName = "gre-user:" + connection.getUserId();
-    if (!"gmail".equals(connection.getOauthClientRegistrationId())
-        || !principalName.equals(connection.getOauthPrincipalName())) {
-      throw new BusinessException(ErrorCode.GMAIL_REAUTH_REQUIRED);
-    }
-    var client = connectionDao.findAuthorizedClient(principalName);
-    if (client == null || !client.getAccessTokenExpiresAt().isAfter(Instant.now())) {
-      throw new BusinessException(ErrorCode.GMAIL_REAUTH_REQUIRED);
-    }
-    return tokenCipher.decrypt(client.getAccessTokenValue(), principalName + ":access");
   }
 
   private GmailMessageSummary fetchMessageSummary(String accessToken, String messageId) {
