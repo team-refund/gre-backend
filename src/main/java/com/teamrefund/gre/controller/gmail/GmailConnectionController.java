@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,6 +30,21 @@ public class GmailConnectionController {
   private final GmailAuthorizationService gmailAuthorizationService;
   private final GmailMessageService gmailMessageService;
   private final HttpSessionOAuth2AuthorizationRequestRepository authorizationRequests;
+
+  @PostMapping("/drafts")
+  public ResponseEntity<Void> createDraft() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  @PostMapping("/connection/reconnect")
+  public ResponseEntity<Void> reconnect() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  @DeleteMapping("/connection")
+  public ResponseEntity<Void> disconnect() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
 
   @GetMapping("/connection")
   public GmailConnectionResponse getConnection(Principal principal) {
