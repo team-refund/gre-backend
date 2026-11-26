@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 
@@ -35,12 +34,9 @@ public class EmailDraftController {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
-  // 이메일 초안 작성 대화 이력을 조회합니다.
+  // 이메일 초안 작성 대화 이력 전체를 조회합니다.
   @GetMapping("/{draftId}/messages")
-  public ResponseEntity<Void> listMessages(
-      @PathVariable("draftId") Long draftId,
-      @RequestParam(name = "page", required = false) Integer page,
-      @RequestParam(name = "size", required = false) Integer size) {
+  public ResponseEntity<Void> listMessages(@PathVariable("draftId") Long draftId) {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
