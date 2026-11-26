@@ -1,5 +1,18 @@
 package com.teamrefund.gre.controller.email;
 
+import com.teamrefund.gre.dto.request.email.EmailDraftApprovalRequest;
+import com.teamrefund.gre.dto.request.email.EmailSendRequest;
+import com.teamrefund.gre.dto.response.email.DraftApprovalResponse;
+import com.teamrefund.gre.dto.response.email.EmailDraftResponse;
+import com.teamrefund.gre.dto.response.email.EmailSendAttemptResponse;
+import com.teamrefund.gre.entity.email.EmailDraftStatus;
+import com.teamrefund.gre.entity.email.EmailSendStatus;
+import com.teamrefund.gre.service.email.EmailDraftSendService;
+import com.teamrefund.gre.service.email.EmailDraftTransactionService;
+import jakarta.validation.Valid;
+import java.security.Principal;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,11 +26,16 @@ import tools.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/api/email-drafts")
+@RequiredArgsConstructor
 public class EmailDraftController {
+  private final EmailDraftTransactionService drafts;
+  private final EmailDraftSendService sendService;
+
   // 최신 이메일 초안의 상세 정보와 미리보기를 조회합니다.
   @GetMapping("/{draftId}")
-  public ResponseEntity<Void> getDraft(@PathVariable("draftId") Long draftId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public EmailDraftResponse getDraft(Principal principal, @PathVariable("draftId") Long draftId) {
+    var details = drafts.getDraft(principal.getName(), draftId);
+    return new EmailDraftResponse(details.draft(), details.attachmentEvidenceIds());
   }
 
   // 현재 이메일 초안의 내용을 직접 수정합니다.
@@ -40,22 +58,36 @@ public class EmailDraftController {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
-  // 현재 이메일 초안을 승인합니다.
+  // 현재 내용을 저장하고 초안 상태를 유지합니다.
   @PostMapping("/{draftId}/approve")
-  public ResponseEntity<Void> approveDraft(@PathVariable("draftId") Long draftId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public DraftApprovalResponse approveDraft(
+      Principal principal,
+      @PathVariable("draftId") Long draftId,
+      @Valid @RequestBody(required = false) EmailDraftApprovalRequest request) {
+    var savedAt = drafts.saveDraft(principal.getName(), draftId, request);
+    return new DraftApprovalResponse(draftId, EmailDraftStatus.DRAFT, savedAt);
   }
 
-  // 승인된 이메일 초안의 Gmail 발송을 요청합니다.
+  // 저장한 초안을 확정하고 Gmail 발송을 요청합니다.
   @PostMapping("/{draftId}/send")
-  public ResponseEntity<Void> sendDraft(
-      @PathVariable("draftId") Long draftId, @RequestBody(required = false) JsonNode request) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<EmailSendAttemptResponse> sendDraft(
+      Principal principal,
+      @PathVariable("draftId") Long draftId,
+      @Valid @RequestBody(required = false) EmailSendRequest request) {
+    var key = request == null ? null : request.getRequestKey();
+    var attempt =
+        sendService.send(principal.getName(), draftId, key == null || key.isBlank() ? null : key);
+    var status =
+        attempt.getStatus() == EmailSendStatus.SENDING ? HttpStatus.ACCEPTED : HttpStatus.OK;
+    return ResponseEntity.status(status).body(new EmailSendAttemptResponse(attempt));
   }
 
-  // 이메일 발송 시도 이력과 상태를 조회합니다.
+  // 이메일 발송 시도와 상태를 조회합니다.
   @GetMapping("/{draftId}/send-attempts")
-  public ResponseEntity<Void> listSendAttempts(@PathVariable("draftId") Long draftId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public List<EmailSendAttemptResponse> listSendAttempts(
+      Principal principal, @PathVariable("draftId") Long draftId) {
+    return drafts.listAttempts(principal.getName(), draftId).stream()
+        .map(EmailSendAttemptResponse::new)
+        .toList();
   }
 }

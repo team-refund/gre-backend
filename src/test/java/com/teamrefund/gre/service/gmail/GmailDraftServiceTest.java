@@ -59,7 +59,8 @@ class GmailDraftServiceTest {
     var service =
         new GmailDraftService(
             new GmailAccessTokenService(connectionService, dao, cipher, refreshService),
-            builder.build());
+            builder.build(),
+            new GmailMimeMessageEncoder("uploads"));
 
     assertThat(service.createDraft("test2", "seller@example.test", "환불 문의", "확인 부탁드립니다."))
         .isEqualTo("draft-1");

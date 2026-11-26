@@ -2,17 +2,7 @@ package com.teamrefund.gre.service.gmail;
 
 import com.teamrefund.gre.exception.BusinessException;
 import com.teamrefund.gre.exception.ErrorCode;
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.Session;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
-import java.util.Properties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -25,17 +15,21 @@ import tools.jackson.databind.JsonNode;
 public class GmailDraftService {
   private final GmailAccessTokenService accessTokenService;
   private final RestClient gmailClient;
+  private final GmailMimeMessageEncoder encoder;
 
   public GmailDraftService(
       GmailAccessTokenService accessTokenService,
-      @Qualifier("gmailApiClient") RestClient gmailClient) {
+      @Qualifier("gmailApiClient") RestClient gmailClient,
+      GmailMimeMessageEncoder encoder) {
     this.accessTokenService = accessTokenService;
     this.gmailClient = gmailClient;
+    this.encoder = encoder;
   }
 
+  /** Gmail 임시보관함에 수신자, 제목, 본문을 담은 초안을 만듭니다. */
   public String createDraft(String loginId, String to, String subject, String body) {
     var token = accessTokenService.getComposeToken(loginId);
-    var rawMessage = encodeDraft(to, subject, body);
+    var rawMessage = encoder.encode(to, subject, body);
     try {
       var draft =
           gmailClient
@@ -58,25 +52,6 @@ public class GmailDraftService {
       throw new BusinessException(ErrorCode.GMAIL_DRAFT_CREATE_FAILED);
     } catch (RestClientException exception) {
       throw new BusinessException(ErrorCode.GMAIL_DRAFT_CREATE_FAILED);
-    }
-  }
-
-  private String encodeDraft(String to, String subject, String body) {
-    try {
-      var message = new MimeMessage(Session.getInstance(new Properties()));
-      var recipient = new InternetAddress(to, true);
-      recipient.validate();
-      if (recipient.isGroup() || !to.equals(recipient.getAddress())) {
-        throw new BusinessException(ErrorCode.INVALID_REQUEST);
-      }
-      message.setRecipient(Message.RecipientType.TO, recipient);
-      message.setSubject(subject, StandardCharsets.UTF_8.name());
-      message.setText(body, StandardCharsets.UTF_8.name());
-      var output = new ByteArrayOutputStream();
-      message.writeTo(output);
-      return Base64.getUrlEncoder().withoutPadding().encodeToString(output.toByteArray());
-    } catch (MessagingException | IOException exception) {
-      throw new BusinessException(ErrorCode.INVALID_REQUEST);
     }
   }
 }
