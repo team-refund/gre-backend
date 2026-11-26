@@ -7,7 +7,7 @@
             SELECT 1
             FROM users
             WHERE login_id = #{loginId}
-              AND status = 'ACTIVE'
+              AND users_status = 'ACTIVE'
               AND deleted_at IS NULL
         )
     </select>
@@ -15,7 +15,7 @@
         SELECT password_hash
         FROM users
         WHERE login_id = #{loginId}
-          AND status = 'ACTIVE'
+          AND users_status = 'ACTIVE'
           AND deleted_at IS NULL
     </select>
 </mapper>
