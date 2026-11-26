@@ -1,18 +1,16 @@
 package com.teamrefund.gre.dto.response.policy;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value
 public class PolicyRagResponse {
   SearchStatus searchStatus;
   String searchNote;
-  EvidenceStatus evidenceStatus;
-  String evidenceNote;
   List<Clause> clauses;
+  List<Review> reviews;
+  String evidenceGaps;
   List<Double> similarityScores;
 
   public enum SearchStatus {
@@ -23,12 +21,6 @@ public class PolicyRagResponse {
     FAILED
   }
 
-  public enum EvidenceStatus {
-    SUFFICIENT,
-    INSUFFICIENT,
-    NOT_ASSESSED
-  }
-
   public enum Applicability {
     APPLICABLE,
     UNCERTAIN,
@@ -37,19 +29,19 @@ public class PolicyRagResponse {
 
   @Data
   public static class Clause {
-    private String quoteEn;
-    private String section;
-    private Source source;
-    private Applicability applicability;
+    private String chunkId;
+    private String policyName;
+    private String articleTitle;
+    private String articleNumber;
+    private String originalTextEn;
+    private String officialUrl;
   }
 
   @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class Source {
-    private String platform;
-    private String site;
-    private String policyTitle;
-    private String sourceUrl;
+  public static class Review {
+    private String chunkId;
+    private Applicability applicability;
+    private String reason;
+    private String missingInformation;
   }
 }

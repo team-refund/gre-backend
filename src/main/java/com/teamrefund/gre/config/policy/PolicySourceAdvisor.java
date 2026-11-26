@@ -19,7 +19,7 @@ public class PolicySourceAdvisor implements BaseAdvisor {
     Object documents = request.context().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
     var prompt = request.prompt();
     String userMessage = prompt.getUserMessage().getText();
-    String messageWithSources = userMessage + "\n\n출처가 포함된 정책 문서:\n" + documents;
+    String messageWithSources = userMessage + "\n\n청크 ID(id)와 출처가 포함된 정책 문서:\n" + documents;
     return request.mutate().prompt(prompt.augmentUserMessage(messageWithSources)).build();
   }
 
