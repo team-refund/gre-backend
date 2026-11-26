@@ -8,7 +8,7 @@ description: GRE 백엔드의 Java 21, Spring Boot, MyBatis, Spring AI 코드 �
 ## 패키지와 네이밍
 
 - `AGENTS.md`의 기본 패키지 아래에서 `controller`, `service`, `dao`, `entity` 계층을 먼저 나눈다. 같은 기능은 계층마다 일관된 하위 패키지명을 사용하고 Java 예약어를 피한다.
-- 요청 DTO는 `dto.request`, 응답 DTO는 `dto.response`에 둔다. AI와 허용된 도구는 `ai`와 `tool`, 공통 설정과 예외는 `config`와 `exception`에 둔다. MyBatis XML은 `src/main/resources/mapper/` 아래 기능별로 관리한다.
+- 요청 DTO는 `dto.request`, 응답 DTO는 `dto.response`에 둔다. AI와 허용된 도구는 `ai`와 `tool`, 공통 설정과 예외는 `config`와 `exception`에 둔다. MyBatis 설정은 `src/main/resources/mybatis/mybatis-config.xml`에 두고 매퍼 XML은 `src/main/resources/mybatis/mapper/` 아래 기능별로 관리한다.
 - 패키지는 영문 소문자, 타입은 PascalCase, 메서드·필드·변수·매개변수는 camelCase, 상수는 UPPER_SNAKE_CASE를 쓴다. 메서드는 동사로 시작하고 boolean 이름은 참일 때의 의미가 드러나게 짓는다.
 - 타입 이름에 역할별 접미사 `Controller`, `Service`, `Dao`, `Exception`을 쓴다. 요청 DTO는 동작을 드러내고 `Request`로, 응답 DTO는 대상을 드러내고 `Response`로 끝낸다.
 - DB 컬럼은 ERD의 snake_case를 따르고 MyBatis에서 Java camelCase와 대응시킨다. API JSON도 별도 계약이 없다면 camelCase를 쓴다. REST URL 세부 규칙은 확정된 API 계약이 있을 때 적용한다.

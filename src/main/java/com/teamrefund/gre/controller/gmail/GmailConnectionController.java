@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,6 +31,25 @@ public class GmailConnectionController {
   private final GmailMessageService gmailMessageService;
   private final HttpSessionOAuth2AuthorizationRequestRepository authorizationRequests;
 
+  // 연결된 Gmail 계정에 이메일 초안을 생성합니다.
+  @PostMapping("/drafts")
+  public ResponseEntity<Void> createDraft() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  // 기존 Gmail 연결의 재연동을 시작합니다.
+  @PostMapping("/connection/reconnect")
+  public ResponseEntity<Void> reconnect() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  // Gmail 계정 연결을 해제합니다.
+  @DeleteMapping("/connection")
+  public ResponseEntity<Void> disconnect() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  // 현재 Gmail 연동 상태를 조회합니다.
   @GetMapping("/connection")
   public GmailConnectionResponse getConnection(Principal principal) {
     var connection = gmailConnectionService.getConnection(principal.getName());
@@ -36,6 +57,7 @@ public class GmailConnectionController {
         connection.getStatus(), connection.getGoogleEmail(), connection.getConnectedAt());
   }
 
+  // Google의 Gmail 권한 동의 화면으로 이동합니다.
   @GetMapping("/oauth2/authorize")
   public ResponseEntity<Void> authorize(
       Principal principal, HttpServletRequest request, HttpServletResponse response) {
@@ -46,6 +68,7 @@ public class GmailConnectionController {
         .build();
   }
 
+  // 연결된 Gmail 계정에서 메일을 검색합니다.
   @GetMapping("/messages")
   public GmailMessageSearchResponse searchMessages(
       Principal principal,
@@ -67,6 +90,7 @@ public class GmailConnectionController {
     return new GmailMessageSearchResponse(messages, result.getNextPageToken());
   }
 
+  // Google 권한 동의 결과를 받아 Gmail 연결을 저장합니다.
   @GetMapping("/oauth2/callback")
   public ResponseEntity<String> callback(
       Principal principal,

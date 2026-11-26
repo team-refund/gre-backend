@@ -24,6 +24,7 @@ public class TestLoginController {
   private final TestLoginService testLoginService;
   private final SecurityContextRepository securityContextRepository;
 
+  // 개발용 테스트 계정의 로그인 세션을 생성합니다.
   @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Void> login(
       @Valid @RequestBody TestLoginRequest loginRequest,

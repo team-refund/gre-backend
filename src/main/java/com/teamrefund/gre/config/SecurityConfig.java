@@ -14,7 +14,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -24,7 +23,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration(proxyBeanMethods = false)
 class SecurityConfig {
-  private static final Set<String> DB_TEST_LOGINS = Set.of("test2", "test3", "test4");
+  private static final Set<String> DB_TEST_LOGINS = Set.of("test1", "test2", "test3", "test4");
 
   @Bean
   SecurityContextRepository securityContextRepository() {
@@ -62,6 +61,7 @@ class SecurityConfig {
                   .permitAll()
                   .requestMatchers("/api/gmail/**")
                   .hasRole("GMAIL_TEST")
+                  // 컨트롤러에 등록한 경로도 인가 규칙에 포함되기 전에는 여기서 차단됩니다.
                   .anyRequest()
                   .denyAll();
             })
@@ -86,14 +86,8 @@ class SecurityConfig {
   }
 
   @Bean
-  UserDetailsService gmailTestUsers(
-      TestLoginDao testLoginDao, @Value("${gre.gmail.test-password}") String password) {
-    var encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    var fallbackHash = password.isBlank() ? null : encoder.encode(password);
+  UserDetailsService gmailTestUsers(TestLoginDao testLoginDao) {
     return loginId -> {
-      if ("gmail-test".equals(loginId) && fallbackHash != null) {
-        return User.withUsername(loginId).password(fallbackHash).roles("GMAIL_TEST").build();
-      }
       if (DB_TEST_LOGINS.contains(loginId)) {
         var passwordHash = testLoginDao.findActiveUserPasswordHash(loginId);
         if (passwordHash != null && passwordHash.startsWith("{bcrypt}")) {
