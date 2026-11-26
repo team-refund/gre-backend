@@ -22,34 +22,20 @@ import org.springframework.stereotype.Service;
 public class PolicyRagService {
   private static final String REVIEW_PROMPT =
       """
-      검색된 공식 정책과 확인된 거래 사실로 JSON을 작성하세요. 정책의 조건과 예외를 보존하세요.
+      검색된 공식 정책과 확인된 거래 사실만으로 JSON을 작성하세요. 설명은 한국어로 작성하고 정책의 요건과 예외를 반영하세요.
 
-      searchStatus는 해결에 필요한 정책·절차가 모두 있으면 EVIDENCE_SUFFICIENT, 일부 빠졌으면
-      EVIDENCE_INSUFFICIENT, 관련 정책이 없으면 POLICY_NOT_FOUND입니다. 증빙의 유무는 별개로 판단하세요.
-      searchNote는 구매자가 질의의 교환·환불 요구를 이메일로 전달할 때 검색된 정책을
-      근거로 사용할 수 있는지 안내하는 한국어 설명입니다. 다음 순서로 작성하세요.
-      정책 원문이 직접 뒷받침하는 범위에서만 이메일에 쓸 주장을 제시하세요.
-      정책의 적용 대상, 필수 요건, 예외를 확인된 거래 사실과 대조하세요.
-      핵심 요건이 미확인이면 조건부 활용으로 표시하고 확인할 사실을 명시하세요.
-      절차를 설명하는 문서는 해당 절차의 근거로만 사용하세요. 정책이 정한 요청 가능성,
-      판매자 재량, 판매자 의무를 구분하고 원문이 보장하지 않는 교환·환불을 단정하지 마세요.
-      원문에 없는 조건이나 결론을 여러 청크를 결합해 만들어 내지 마세요.
-      종합 판단: 검색된 청크를 함께 검토해 이메일에서 뒷받침할 수 있는 요구와
-      근거가 부족한 요구를 1~2문장으로 설명하세요.
-      근거별 활용: 각 청크를 검토해 문서명과 활용 판단(활용 가능, 조건부 활용, 활용 어려움)을
-      적으세요. 이메일에서 뒷받침할 구체적인 주장과 핵심 조건, 또는 활용이 어려운 이유를
-      한 문장으로 설명하세요. 같은 주장과 조건을 담은 근거는 한 항목으로 묶으세요.
-      searchNote에는 청크 번호와 chunkId를 표시하지 마세요.
+      searchStatus는 거래 증빙의 유무와 별개로, 필요한 정책·절차가 모두 있으면 EVIDENCE_SUFFICIENT,
+      일부만 있으면 EVIDENCE_INSUFFICIENT, 관련 정책이 없으면 POLICY_NOT_FOUND입니다.
+      searchNote에는 질의에 나온 교환·환불 요구를 판매자에게 할 때 검색된 청크를 근거로 쓸 수 있는지
+      1~2문장으로 요약하세요. 뒷받침되는 요구와 미확인 핵심 조건 또는 근거가 부족한 이유를 적으세요.
+      요청 절차, 판매자 재량, 판매자 의무를 구분하고 원문이 보장하지 않는 결과를 단정하지 마세요.
+      청크별 목록과 청크 번호·chunkId는 생략하세요.
 
-      검색된 청크의 전체 원문과 출처는 서버가 응답에 담습니다.
-      reviews에는 검색된 각 청크의 검토를 제공된 chunkId로 하나씩 담으세요.
-      관련성이 없는 청크의 applicability는 NOT_APPLICABLE로 표시하고 reason에 이유를 기록하세요.
-      applicability는 적용이 확인되면 APPLICABLE, 사실이 미확인이면 UNCERTAIN, 적용 불가이면 NOT_APPLICABLE입니다.
-      reason에는 정책 요건과 확인된 사실을 대조한 이유를 한국어로 적으세요.
-      missingInformation에는 해당 조항을 판단하기 위해 추가로 확인할 사실이나 증빙을 적고, 없으면 null로 두세요.
-      evidenceGaps에는 분쟁 해결을 위해 추가로 확인할 사실이나 준비할 증빙을 한국어로 통합하세요.
-      추가로 확인할 사항이 없으면 null로 두세요. 공식 문서와 거래 사실에 없는 내용은 추정하지 마세요.
-      검색된 청크가 없으면 reviews는 빈 배열입니다.
+      reviews에는 제공된 chunkId마다 검토를 하나씩 담으세요. 검색 결과가 없으면 빈 배열입니다.
+      applicability는 적용 확인 시 APPLICABLE, 핵심 사실 미확인 시 UNCERTAIN,
+      적용 불가 또는 무관하면 NOT_APPLICABLE입니다. reason에는 정책 요건과 거래 사실을 대조한 근거를 적으세요.
+      missingInformation에는 조항 판단에 필요한 추가 사실·증빙을, evidenceGaps에는 분쟁 해결에 필요한
+      추가 사실·증빙을 종합해 적으세요. 각각 추가 확인 사항이 없으면 null로 두세요.
       """;
 
   private final ChatClient chatClient;
@@ -87,7 +73,7 @@ public class PolicyRagService {
     if (documents.isEmpty()) {
       return new PolicyRagResponse(
           SearchStatus.POLICY_NOT_FOUND,
-          "검색된 정책·안내문이 없어 이메일에 인용할 정책 근거를 제시할 수 없습니다.",
+          "검색된 정책·안내문이 없어 판매자에게 교환·환불을 요구할 정책 근거를 찾지 못했습니다.",
           List.of(),
           List.of(),
           null,
