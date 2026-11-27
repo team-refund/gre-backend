@@ -7,31 +7,37 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface OrchestratorRunDao {
-  // 새 이벤트는 PENDING으로 저장하고 생성된 ID를 run에 채운다. 중복이면 0을 반환한다.
+  // 새 실행을 PENDING으로 등록하고 생성된 ID를 run.id에 채운다. 같은 이벤트의 실행이 있으면 0을 반환한다.
   int insertPending(OrchestratorRun run);
 
+  // 실행 ID로 현재 상태, 진행 결과, 다음 작업과 오류를 조회한다.
   OrchestratorRun findById(@Param("runId") long runId);
 
+  // 이벤트가 이미 접수됐을 때 사건 ID, 실행 계기, 이벤트 키로 기존 실행을 찾는다.
   OrchestratorRun findByTrigger(
       @Param("caseId") long caseId,
       @Param("triggerType") String triggerType,
       @Param("triggerKey") String triggerKey);
 
+  // 사건별 실행 이력의 페이지 응답에 쓸 전체 건수를 조회한다.
   long countByCaseId(@Param("caseId") long caseId);
 
+  // 사건의 실행 이력을 최신순으로 페이지 조회한다.
   List<OrchestratorRun> findPageByCaseId(
       @Param("caseId") long caseId, @Param("limit") int limit, @Param("offset") long offset);
 
-  // 선점한 실행자만 영향받은 행 수 1을 받는다.
+  // 대기 중인 실행을 PROCESSING으로 바꾼다. 1을 반환받은 요청만 실행을 시작한다.
   int claimPending(@Param("runId") long runId);
 
+  // 실행 중에 현재까지의 작업 결과를 저장한다.
   int updateProgress(@Param("runId") long runId, @Param("resultData") String resultData);
 
+  // 실행이 성공하면 최종 결과와 다음 작업을 저장하고 완료 시각을 기록한다.
   int markCompleted(
       @Param("runId") long runId,
       @Param("nextAction") String nextAction,
       @Param("resultData") String resultData);
 
-  // 마지막 진행 결과를 유지하고 서비스가 정제한 오류 메시지를 기록한다.
+  // 실행이 실패하면 이전 진행 결과를 유지하고 정제된 오류 메시지를 기록한다.
   int markFailed(@Param("runId") long runId, @Param("errorMessage") String errorMessage);
 }

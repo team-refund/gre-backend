@@ -16,23 +16,27 @@
         <result property="completedAt" column="completed_at"/>
     </resultMap>
 
+    <!-- 조회에 공통으로 쓰는 컬럼이다. JSON 결과는 Java에서 읽을 수 있도록 문자열로 반환한다. -->
     <sql id="runColumns">
         id, case_id, trigger_type, trigger_key, orchestrator_runs_status, next_action,
         CAST(result_data AS text) AS result_data, error_message, created_at, updated_at, completed_at
     </sql>
 
+    <!-- 사건 ID, 실행 계기, 이벤트 키가 같은 실행이 있으면 새 행을 만들지 않는다. -->
     <insert id="insertPending" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO orchestrator_runs (case_id, trigger_type, trigger_key)
         VALUES (#{caseId}, #{triggerType}, #{triggerKey})
         ON CONFLICT (case_id, trigger_type, trigger_key) DO NOTHING
     </insert>
 
+    <!-- 실행 ID에 해당하는 한 건을 조회한다. -->
     <select id="findById" resultMap="orchestratorRun">
         SELECT <include refid="runColumns"/>
         FROM orchestrator_runs
         WHERE id = #{runId}
     </select>
 
+    <!-- 중복 등록을 확인할 때 저장한 세 가지 키로 기존 실행을 조회한다. -->
     <select id="findByTrigger" resultMap="orchestratorRun">
         SELECT <include refid="runColumns"/>
         FROM orchestrator_runs
@@ -41,12 +45,14 @@
           AND trigger_key = #{triggerKey}
     </select>
 
+    <!-- 해당 사건의 실행 이력 전체 건수를 센다. -->
     <select id="countByCaseId" resultType="long">
         SELECT COUNT(*)
         FROM orchestrator_runs
         WHERE case_id = #{caseId}
     </select>
 
+    <!-- 생성 시각이 같은 실행은 ID 내림차순으로 정렬한다. -->
     <select id="findPageByCaseId" resultMap="orchestratorRun">
         SELECT <include refid="runColumns"/>
         FROM orchestrator_runs
@@ -55,6 +61,7 @@
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
+    <!-- PENDING인 행만 갱신하므로 다른 요청이 먼저 실행을 시작하면 0을 반환한다. -->
     <update id="claimPending">
         UPDATE orchestrator_runs
         SET orchestrator_runs_status = 'PROCESSING',
@@ -63,6 +70,7 @@
           AND orchestrator_runs_status = 'PENDING'
     </update>
 
+    <!-- PROCESSING 상태에서만 result_data를 전달받은 JSON으로 갱신한다. -->
     <update id="updateProgress">
         UPDATE orchestrator_runs
         SET result_data = CAST(#{resultData,jdbcType=VARCHAR} AS jsonb),
@@ -71,6 +79,7 @@
           AND orchestrator_runs_status = 'PROCESSING'
     </update>
 
+    <!-- PROCESSING 상태인 실행을 COMPLETED로 바꾸고 최종 결과와 완료 시각을 함께 저장한다. -->
     <update id="markCompleted">
         UPDATE orchestrator_runs
         SET orchestrator_runs_status = 'COMPLETED',
@@ -82,6 +91,7 @@
           AND orchestrator_runs_status = 'PROCESSING'
     </update>
 
+    <!-- PROCESSING 상태인 실행을 FAILED로 바꾸고 오류 메시지와 종료 시각을 저장한다. -->
     <update id="markFailed">
         UPDATE orchestrator_runs
         SET orchestrator_runs_status = 'FAILED',
