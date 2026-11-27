@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.orchestrator.OrchestratorRunDao">
+    <resultMap id="orchestratorRun" type="com.teamrefund.gre.entity.orchestrator.OrchestratorRun">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="triggerType" column="trigger_type"/>
+        <result property="triggerKey" column="trigger_key"/>
+        <result property="orchestratorRunsStatus" column="orchestrator_runs_status"/>
+        <result property="nextAction" column="next_action"/>
+        <result property="resultData" column="result_data"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="completedAt" column="completed_at"/>
+    </resultMap>
+
+    <sql id="runColumns">
+        id, case_id, trigger_type, trigger_key, orchestrator_runs_status, next_action,
+        CAST(result_data AS text) AS result_data, error_message, created_at, updated_at, completed_at
+    </sql>
+
+    <insert id="insertPending" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO orchestrator_runs (case_id, trigger_type, trigger_key)
+        VALUES (#{caseId}, #{triggerType}, #{triggerKey})
+        ON CONFLICT (case_id, trigger_type, trigger_key) DO NOTHING
+    </insert>
+
+    <select id="findById" resultMap="orchestratorRun">
+        SELECT <include refid="runColumns"/>
+        FROM orchestrator_runs
+        WHERE id = #{runId}
+    </select>
+
+    <select id="findByTrigger" resultMap="orchestratorRun">
+        SELECT <include refid="runColumns"/>
+        FROM orchestrator_runs
+        WHERE case_id = #{caseId}
+          AND trigger_type = #{triggerType}
+          AND trigger_key = #{triggerKey}
+    </select>
+
+    <select id="countByCaseId" resultType="long">
+        SELECT COUNT(*)
+        FROM orchestrator_runs
+        WHERE case_id = #{caseId}
+    </select>
+
+    <select id="findPageByCaseId" resultMap="orchestratorRun">
+        SELECT <include refid="runColumns"/>
+        FROM orchestrator_runs
+        WHERE case_id = #{caseId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="claimPending">
+        UPDATE orchestrator_runs
+        SET orchestrator_runs_status = 'PROCESSING',
+            updated_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PENDING'
+    </update>
+
+    <update id="updateProgress">
+        UPDATE orchestrator_runs
+        SET result_data = CAST(#{resultData,jdbcType=VARCHAR} AS jsonb),
+            updated_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PROCESSING'
+    </update>
+
+    <update id="markCompleted">
+        UPDATE orchestrator_runs
+        SET orchestrator_runs_status = 'COMPLETED',
+            next_action = #{nextAction,jdbcType=VARCHAR},
+            result_data = CAST(#{resultData,jdbcType=VARCHAR} AS jsonb),
+            updated_at = now(),
+            completed_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PROCESSING'
+    </update>
+
+    <update id="markFailed">
+        UPDATE orchestrator_runs
+        SET orchestrator_runs_status = 'FAILED',
+            error_message = #{errorMessage},
+            updated_at = now(),
+            completed_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PROCESSING'
+    </update>
+</mapper>
