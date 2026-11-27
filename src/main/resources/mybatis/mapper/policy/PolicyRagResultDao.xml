@@ -9,6 +9,16 @@
         <result property="evidenceGaps" column="evidence_gaps"/>
     </resultMap>
 
+    <!-- 원문 목록과 검토 목록을 JSON 배열로 저장한다. -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO policy_rag_results (clauses, reviews, evidence_gaps)
+        VALUES (
+            CAST(#{clauses,jdbcType=VARCHAR} AS jsonb),
+            CAST(#{reviews,jdbcType=VARCHAR} AS jsonb),
+            #{evidenceGaps}
+        )
+    </insert>
+
     <!-- 완료된 실행이 참조하는 정책 원문과 검토 결과가 여러 건이면 가장 최근 결과를 반환한다. -->
     <select id="findLatestByCaseId" resultMap="policyRagResult">
         SELECT result.id, CAST(result.clauses AS text) AS clauses,
