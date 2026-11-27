@@ -45,20 +45,12 @@
           AND trigger_key = #{triggerKey}
     </select>
 
-    <!-- 해당 사건의 실행 이력 전체 건수를 센다. -->
-    <select id="countByCaseId" resultType="long">
-        SELECT COUNT(*)
-        FROM orchestrator_runs
-        WHERE case_id = #{caseId}
-    </select>
-
-    <!-- 생성 시각이 같은 실행은 ID 내림차순으로 정렬한다. -->
-    <select id="findPageByCaseId" resultMap="orchestratorRun">
+    <select id="findLatestByCaseId" resultMap="orchestratorRun">
         SELECT <include refid="runColumns"/>
         FROM orchestrator_runs
         WHERE case_id = #{caseId}
         ORDER BY created_at DESC, id DESC
-        LIMIT #{limit} OFFSET #{offset}
+        LIMIT 1
     </select>
 
     <!-- PENDING인 행만 갱신하므로 다른 요청이 먼저 실행을 시작하면 0을 반환한다. -->

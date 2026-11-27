@@ -1,7 +1,6 @@
 package com.teamrefund.gre.dao.orchestrator;
 
 import com.teamrefund.gre.entity.orchestrator.OrchestratorRun;
-import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -19,17 +18,13 @@ public interface OrchestratorRunDao {
       @Param("triggerType") String triggerType,
       @Param("triggerKey") String triggerKey);
 
-  // 사건별 실행 이력의 페이지 응답에 쓸 전체 건수를 조회한다.
-  long countByCaseId(@Param("caseId") long caseId);
-
-  // 사건의 실행 이력을 최신순으로 페이지 조회한다.
-  List<OrchestratorRun> findPageByCaseId(
-      @Param("caseId") long caseId, @Param("limit") int limit, @Param("offset") long offset);
+  // 사건 상세의 Run 카드에 표시할 가장 최근 실행을 조회한다. 실행이 없으면 null을 반환한다.
+  OrchestratorRun findLatestByCaseId(@Param("caseId") long caseId);
 
   // 대기 중인 실행을 PROCESSING으로 바꾼다. 1을 반환받은 요청만 실행을 시작한다.
   int claimPending(@Param("runId") long runId);
 
-  // 실행 중에 현재까지의 작업 결과를 저장한다.
+  // 실행 중에 현재까지의 작업 결과를   저장한다.
   int updateProgress(@Param("runId") long runId, @Param("resultData") String resultData);
 
   // 실행이 성공하면 최종 결과와 다음 작업을 저장하고 완료 시각을 기록한다.
