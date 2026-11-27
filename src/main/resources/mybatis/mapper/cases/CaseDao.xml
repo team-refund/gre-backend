@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.cases.CaseDao">
+    <select id="findActiveUserId" resultType="long">
+        SELECT id
+        FROM users
+        WHERE login_id = #{loginId}
+          AND users_status = 'ACTIVE'
+          AND deleted_at IS NULL
+    </select>
+
+    <insert id="insertCase" useGeneratedKeys="true" keyProperty="id,createdAt" keyColumn="id,created_at">
+        INSERT INTO cases (
+            user_id, title, case_type, cases_status, merchant_name, purchase_site,
+            merchant_email, order_number, purchase_date, payment_amount
+        )
+        VALUES (
+            #{userId}, #{title}, #{caseType}, COALESCE(#{casesStatus, jdbcType=VARCHAR}, 'REGISTERED'),
+            #{merchantName}, #{purchaseSite}, #{merchantEmail}, #{orderNumber, jdbcType=VARCHAR},
+            CAST(#{purchaseDate, jdbcType=VARCHAR} AS date), #{paymentAmount, jdbcType=DECIMAL}
+        )
+    </insert>
+
+    <insert id="insertRegistrationHistory">
+        INSERT INTO case_status_histories (case_id, case_timeline_status, description)
+        VALUES (#{caseId}, #{status, jdbcType=VARCHAR}, #{userPrompt, jdbcType=VARCHAR})
+    </insert>
+</mapper>

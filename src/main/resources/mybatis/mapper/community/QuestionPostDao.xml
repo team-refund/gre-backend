@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.community.QuestionPostDao">
+    <resultMap id="result" type="com.teamrefund.gre.entity.community.QuestionPost">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="questionCategory" column="question_category"/>
+        <result property="questionStatus" column="question_posts_question_status"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="checkedCommentId" column="checked_commentid"/>
+        <result property="resolvedAt" column="resolved_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, user_id, title, content, question_category, question_posts_question_status,
+        view_count, checked_commentid, resolved_at, created_at, updated_at
+    </sql>
+
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO question_posts (
+            user_id, title, content, question_category, question_posts_question_status
+        )
+        VALUES (
+            #{userId}, #{title}, #{content},
+            #{questionCategory, jdbcType=VARCHAR},
+            COALESCE(#{questionStatus, jdbcType=VARCHAR}, 'OPEN')
+        )
+    </insert>
+
+    <update id="updatePost">
+        UPDATE question_posts
+        SET title = #{title},
+            content = #{content},
+            question_category = #{questionCategory, jdbcType=VARCHAR},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </update>
+
+    <delete id="deletePost">
+        DELETE FROM question_posts
+        WHERE id = #{postId}
+          AND user_id = #{userId}
+    </delete>
+
+    <select id="findLatest" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM question_posts
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findPage" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM question_posts
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPosts" resultType="long">
+        SELECT COUNT(*)
+        FROM question_posts
+    </select>
+
+    <select id="findById" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM question_posts
+        WHERE id = #{postId}
+    </select>
+
+    <update id="updateQuestionPostQEustionStatus">
+        UPDATE question_posts
+        SET question_posts_question_status = #{questionStatus},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{postId}
+    </update>
+
+    <update id="updateCommentcheckedQuestionPost">
+        UPDATE question_posts
+        SET checked_commentid = #{checkedCommentid},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{postId}
+          AND EXISTS (
+              SELECT 1
+              FROM community_comments
+              WHERE id = #{checkedCommentid}
+                AND question_post_id = #{postId}
+          )
+    </update>
+</mapper>

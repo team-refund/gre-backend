@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.cases.CaseEvidenceDao">
+    <resultMap id="caseEvidenceResultMap" type="com.teamrefund.gre.entity.cases.CaseEvidence">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="evidenceType" column="evidence_type"/>
+        <result property="description" column="description"/>
+        <result property="originalFilename" column="original_filename"/>
+        <result property="storedFilename" column="stored_filename"/>
+        <result property="filePath" column="file_path"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="contentType" column="content_type"/>
+        <result property="caseEvidencesAnalysisStatus" column="case_evidences_analysis_status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insertEvidence" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO case_evidences (
+            case_id, evidence_type, description, original_filename, stored_filename,
+            file_path, file_size, content_type
+        )
+        VALUES (
+            #{caseId}, #{evidenceType}, #{description, jdbcType=VARCHAR}, #{originalFilename},
+            #{storedFilename}, #{filePath}, #{fileSize}, #{contentType, jdbcType=VARCHAR}
+        )
+    </insert>
+
+    <select id="findByCaseIdAndEvidenceId" resultMap="caseEvidenceResultMap">
+        SELECT id, case_id, evidence_type, description, original_filename, stored_filename,
+               file_path, file_size, content_type, case_evidences_analysis_status,
+               created_at, updated_at
+        FROM case_evidences
+        WHERE case_id = #{caseId}
+          AND id = #{evidenceId}
+    </select>
+
+    <update id="startAnalysis">
+        UPDATE case_evidences
+        SET case_evidences_analysis_status = 'PROCESSING',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE case_id = #{caseId}
+          AND id = #{evidenceId}
+          AND case_evidences_analysis_status = 'PENDING'
+    </update>
+
+    <update id="completeAnalysis">
+        UPDATE case_evidences
+        SET case_evidences_analysis_status = 'COMPLETED',
+            description = #{description, jdbcType=VARCHAR},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE case_id = #{caseId}
+          AND id = #{evidenceId}
+          AND case_evidences_analysis_status = 'PROCESSING'
+    </update>
+
+    <update id="failAnalysis">
+        UPDATE case_evidences
+        SET case_evidences_analysis_status = 'FAILED',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE case_id = #{caseId}
+          AND id = #{evidenceId}
+          AND case_evidences_analysis_status = 'PROCESSING'
+    </update>
+</mapper>
