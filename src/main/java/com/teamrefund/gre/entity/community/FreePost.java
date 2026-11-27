@@ -1,6 +1,6 @@
 package com.teamrefund.gre.entity.community;
 
-import java.time.Instant;
+import java.util.Date;
 import lombok.Data;
 
 @Data
@@ -11,6 +11,6 @@ public class FreePost {
   private String content;
   private int viewCount;
   private int likeCount;
-  private Instant createdAt;
-  private Instant updatedAt;
+  private Date createdAt;
+  private Date updatedAt;
 }

@@ -1,6 +1,6 @@
 package com.teamrefund.gre.entity.community;
 
-import java.time.Instant;
+import java.util.Date;
 import lombok.Data;
 
 @Data
@@ -13,7 +13,7 @@ public class QuestionPost {
   private String questionStatus;
   private int viewCount;
   private Integer checkedCommentId;
-  private Instant createdAt;
-  private Instant updatedAt;
-  private Instant resolvedAt;
+  private Date createdAt;
+  private Date updatedAt;
+  private Date resolvedAt;
 }

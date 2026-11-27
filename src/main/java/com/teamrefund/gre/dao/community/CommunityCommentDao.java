@@ -21,15 +21,7 @@ public interface CommunityCommentDao {
 
   // 게시판 유형과 게시글 ID로 댓글 목록을 조회
   List<CommunityComment> findPageByPost(
-      @Param("boardType") String boardType,
-      @Param("postId") long postId,
-
-      // 댓글 페이징 할 때 사용할거. 일단 만들어 두고, 댓글 페이징 없을 것 같으면 안쓸 예정
-      @Param("limit") int limit, // 몇개 가져올지
-      @Param("offset") long offset); // 숫자 셀 떄 기준
-
-  // 해당 게시글에 달린 전체 댓글이 몇개인지 조회// 댓글 수 보여주는거 안될 것 같으면 안쓸 예정
-  long countByPost(@Param("boardType") String boardType, @Param("postId") long postId);
+      @Param("boardType") String boardType, @Param("postId") long postId);
 
   // 댓글 한 건을 조회
   CommunityComment findById(@Param("commentId") long commentId);

@@ -1,6 +1,6 @@
 package com.teamrefund.gre.entity.community;
 
-import java.time.Instant;
+import java.util.Date;
 import lombok.Data;
 
 @Data
@@ -11,6 +11,6 @@ public class CommunityComment {
   private Long questionPostId;
   private Long disputePostId;
   private String content;
-  private Instant createdAt;
-  private Instant updatedAt;
+  private Date createdAt;
+  private Date updatedAt;
 }

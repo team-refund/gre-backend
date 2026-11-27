@@ -27,4 +27,12 @@ public interface QuestionPostDao {
 
   // 게시글 상세 화면 열 때
   QuestionPost findById(@Param("postId") long postId);
+
+  // 게시글 상태(채택여부) 바꿀 때
+  int updateQuestionPostQEustionStatus(
+      @Param("postId") long postId, @Param("questionStatus") String questionStatus);
+
+  // 답변(comment) 채택할 때
+  int updateCommentcheckedQuestionPost(
+      @Param("postId") Long postId, @Param("checkedCommentid") int checkedCommentid);
 }

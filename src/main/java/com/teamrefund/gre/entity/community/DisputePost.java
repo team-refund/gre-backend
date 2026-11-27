@@ -1,6 +1,6 @@
 package com.teamrefund.gre.entity.community;
 
-import java.time.Instant;
+import java.util.Date;
 import lombok.Data;
 
 @Data
@@ -14,6 +14,6 @@ public class DisputePost {
   private String disputeType;
   private String resolutionStatus;
   private int viewCount;
-  private Instant createdAt;
-  private Instant updatedAt;
+  private Date createdAt;
+  private Date updatedAt;
 }
