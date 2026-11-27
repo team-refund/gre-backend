@@ -37,6 +37,18 @@
           AND id = #{evidenceId}
     </select>
 
+    <select id="findByCaseIdAndUserId" resultMap="caseEvidenceResultMap">
+        SELECT evidence.id, evidence.case_id, evidence.evidence_type, evidence.description,
+               evidence.original_filename, evidence.stored_filename, evidence.file_path,
+               evidence.file_size, evidence.content_type, evidence.case_evidences_analysis_status,
+               evidence.created_at, evidence.updated_at
+        FROM case_evidences evidence
+        JOIN cases ON cases.id = evidence.case_id
+        WHERE evidence.case_id = #{caseId}
+          AND cases.user_id = #{userId}
+        ORDER BY evidence.created_at DESC, evidence.id DESC
+    </select>
+
     <update id="startAnalysis">
         UPDATE case_evidences
         SET case_evidences_analysis_status = 'PROCESSING',

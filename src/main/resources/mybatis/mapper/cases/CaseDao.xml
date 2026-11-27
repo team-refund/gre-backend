@@ -2,6 +2,36 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.teamrefund.gre.dao.cases.CaseDao">
+    <resultMap id="caseResultMap" type="com.teamrefund.gre.entity.cases.Case">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="caseType" column="case_type"/>
+        <result property="casesStatus" column="cases_status"/>
+        <result property="merchantName" column="merchant_name"/>
+        <result property="purchaseSite" column="purchase_site"/>
+        <result property="merchantEmail" column="merchant_email"/>
+        <result property="orderNumber" column="order_number"/>
+        <result property="purchaseDate" column="purchase_date"/>
+        <result property="paymentAmount" column="payment_amount"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="resolvedAt" column="resolved_at"/>
+    </resultMap>
+
+    <sql id="caseColumns">
+        id, user_id, title, case_type, cases_status, merchant_name, purchase_site,
+        merchant_email, order_number, purchase_date, payment_amount, created_at,
+        updated_at, resolved_at
+    </sql>
+
+    <sql id="userCaseFilter">
+        user_id = #{userId}
+        <if test="status != null">
+            AND cases_status = #{status}
+        </if>
+    </sql>
+
     <select id="findActiveUserId" resultType="long">
         SELECT id
         FROM users
@@ -22,8 +52,36 @@
         )
     </insert>
 
-    <insert id="insertRegistrationHistory">
-        INSERT INTO case_status_histories (case_id, case_timeline_status, description)
-        VALUES (#{caseId}, #{status, jdbcType=VARCHAR}, #{userPrompt, jdbcType=VARCHAR})
-    </insert>
+    <select id="findPageByUserId" resultMap="caseResultMap">
+        SELECT <include refid="caseColumns"/>
+        FROM cases
+        WHERE <include refid="userCaseFilter"/>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM cases
+        WHERE <include refid="userCaseFilter"/>
+    </select>
+
+    <select id="findByIdAndUserId" resultMap="caseResultMap">
+        SELECT <include refid="caseColumns"/>
+        FROM cases
+        WHERE id = #{caseId}
+          AND user_id = #{userId}
+    </select>
+    <update id="updateStatus">
+        UPDATE cases
+        SET cases_status = #{newStatus},
+            updated_at = CURRENT_TIMESTAMP
+            <if test='newStatus == "RESOLVED"'>
+                , resolved_at = CURRENT_TIMESTAMP
+            </if>
+        WHERE id = #{caseId}
+          AND user_id = #{userId}
+          AND cases_status = #{expectedStatus}
+          AND cases_status &lt;&gt; #{newStatus}
+    </update>
 </mapper>
