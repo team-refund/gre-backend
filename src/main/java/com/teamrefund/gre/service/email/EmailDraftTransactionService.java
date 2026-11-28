@@ -2,10 +2,12 @@ package com.teamrefund.gre.service.email;
 
 import com.teamrefund.gre.dao.email.EmailDraftDao;
 import com.teamrefund.gre.dao.gmail.CaseEmailDao;
+import com.teamrefund.gre.dto.query.email.EmailDraftDetailResult;
 import com.teamrefund.gre.dto.query.email.EmailDraftRow;
 import com.teamrefund.gre.dto.query.email.EmailSendAttempt;
 import com.teamrefund.gre.dto.query.gmail.GmailThreadMessage;
-import com.teamrefund.gre.dto.request.email.EmailDraftApprovalRequest;
+import com.teamrefund.gre.dto.request.email.EmailDraftContentRequest;
+import com.teamrefund.gre.entity.email.EmailDraft;
 import com.teamrefund.gre.entity.email.EmailDraftStatus;
 import com.teamrefund.gre.entity.email.EmailSendStatus;
 import com.teamrefund.gre.entity.gmail.GmailConnection;
@@ -42,28 +44,58 @@ public class EmailDraftTransactionService {
 
   /** 초안 행을 잠그고 사용자가 확인한 내용과 승인 상태를 함께 저장합니다. */
   @Transactional
-  public Instant approveDraft(String loginId, long draftId, EmailDraftApprovalRequest request) {
+  public Instant approveDraft(String loginId, long draftId, EmailDraftContentRequest request) {
     var draft = requireOwnedDraft(loginId, draftId);
     if (draft.getStatus() != EmailDraftStatus.DRAFT) {
       throw new BusinessException(ErrorCode.INVALID_CASE_STATE);
     }
+    applyContent(draft, request);
+    updateAttachments(draft, request == null ? null : request.getAttachmentEvidenceIds());
+    return drafts.updateDraft(
+        draftId, draft.getRecipientEmail(), draft.getSubject(), draft.getBody());
+  }
+
+  @Transactional
+  public EmailDraftDetailResult updateDraft(
+      String loginId, long draftId, EmailDraftContentRequest request) {
+    if (draftId <= 0) {
+      throw new BusinessException(ErrorCode.INVALID_REQUEST);
+    }
+    var draft = requireOwnedDraft(loginId, draftId);
+    applyContent(draft, request);
+    var content = new EmailDraft();
+    content.setId(draftId);
+    content.setRecipientEmail(draft.getRecipientEmail());
+    content.setSubject(draft.getSubject());
+    content.setBody(draft.getBody());
+    if (drafts.updateContent(content) != 1) {
+      throw new BusinessException(ErrorCode.INVALID_CASE_STATE);
+    }
+    updateAttachments(draft, request.getAttachmentEvidenceIds());
+    return new EmailDraftDetailResult(
+        drafts.findOwnedDraft(draftId, loginId), drafts.findAttachmentEvidenceIds(draftId));
+  }
+
+  private void applyContent(EmailDraftRow draft, EmailDraftContentRequest request) {
     if (request != null) {
       draft.setRecipientEmail(request.getTo());
       draft.setSubject(request.getSubject());
       draft.setBody(request.getBody());
     }
     validateContent(draft);
-    if (request != null && request.getAttachmentEvidenceIds() != null) {
-      drafts.deleteAttachments(draftId);
-      for (var evidenceId : request.getAttachmentEvidenceIds().stream().distinct().toList()) {
-        if (evidenceId == null
-            || drafts.addAttachment(draftId, draft.getCaseId(), evidenceId) != 1) {
-          throw new BusinessException(ErrorCode.INVALID_REQUEST);
-        }
+  }
+
+  private void updateAttachments(EmailDraftRow draft, List<Long> evidenceIds) {
+    if (evidenceIds == null) {
+      return;
+    }
+    drafts.deleteAttachments(draft.getId());
+    for (var evidenceId : evidenceIds.stream().distinct().toList()) {
+      if (evidenceId == null
+          || drafts.addAttachment(draft.getId(), draft.getCaseId(), evidenceId) != 1) {
+        throw new BusinessException(ErrorCode.INVALID_REQUEST);
       }
     }
-    return drafts.updateDraft(
-        draftId, draft.getRecipientEmail(), draft.getSubject(), draft.getBody());
   }
 
   /** 승인된 초안의 발송을 선점하고 반복 요청에는 기존 시도를 반환합니다. */

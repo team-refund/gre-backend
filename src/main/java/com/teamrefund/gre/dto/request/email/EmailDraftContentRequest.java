@@ -12,7 +12,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class EmailDraftApprovalRequest {
+public class EmailDraftContentRequest {
   @NotBlank
   @Email
   @Size(max = 255)

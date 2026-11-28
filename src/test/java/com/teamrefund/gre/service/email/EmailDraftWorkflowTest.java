@@ -16,7 +16,7 @@ import com.teamrefund.gre.dao.email.EmailDraftDao;
 import com.teamrefund.gre.dao.gmail.CaseEmailDao;
 import com.teamrefund.gre.dto.query.email.EmailDraftRow;
 import com.teamrefund.gre.dto.query.email.EmailSendAttempt;
-import com.teamrefund.gre.dto.request.email.EmailDraftApprovalRequest;
+import com.teamrefund.gre.dto.request.email.EmailDraftContentRequest;
 import com.teamrefund.gre.entity.email.EmailDraftStatus;
 import com.teamrefund.gre.entity.email.EmailSendStatus;
 import com.teamrefund.gre.entity.gmail.GmailConnection;
@@ -42,7 +42,7 @@ class EmailDraftWorkflowTest {
   @Test
   void approvalSavesEditsWithoutCallingGmail() {
     var draft = draft();
-    var request = new EmailDraftApprovalRequest();
+    var request = new EmailDraftContentRequest();
     request.setTo("seller@example.test");
     request.setSubject("Updated");
     request.setBody("Updated body");

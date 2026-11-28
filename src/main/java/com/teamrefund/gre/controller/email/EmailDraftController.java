@@ -1,6 +1,6 @@
 package com.teamrefund.gre.controller.email;
 
-import com.teamrefund.gre.dto.request.email.EmailDraftApprovalRequest;
+import com.teamrefund.gre.dto.request.email.EmailDraftContentRequest;
 import com.teamrefund.gre.dto.request.email.EmailSendRequest;
 import com.teamrefund.gre.dto.response.email.DraftApprovalResponse;
 import com.teamrefund.gre.dto.response.email.EmailDraftResponse;
@@ -40,9 +40,12 @@ public class EmailDraftController {
 
   // 현재 이메일 초안의 내용을 직접 수정합니다.
   @PutMapping("/{draftId}")
-  public ResponseEntity<Void> updateDraft(
-      @PathVariable("draftId") Long draftId, @RequestBody JsonNode request) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public EmailDraftResponse updateDraft(
+      Principal principal,
+      @PathVariable("draftId") long draftId,
+      @Valid @RequestBody EmailDraftContentRequest request) {
+    var details = drafts.updateDraft(principal.getName(), draftId, request);
+    return new EmailDraftResponse(details.getDraft(), details.getAttachmentEvidenceIds());
   }
 
   // AI에 초안 작성 또는 수정을 요청하고 결과를 NDJSON으로 받습니다.
@@ -63,7 +66,7 @@ public class EmailDraftController {
   public DraftApprovalResponse approveDraft(
       Principal principal,
       @PathVariable("draftId") Long draftId,
-      @Valid @RequestBody(required = false) EmailDraftApprovalRequest request) {
+      @Valid @RequestBody(required = false) EmailDraftContentRequest request) {
     var savedAt = drafts.approveDraft(principal.getName(), draftId, request);
     return new DraftApprovalResponse(draftId, EmailDraftStatus.FINALIZED, savedAt);
   }
