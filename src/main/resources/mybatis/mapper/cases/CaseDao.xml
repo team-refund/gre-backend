@@ -73,7 +73,6 @@
             </if>
         WHERE id = #{caseId}
           AND user_id = #{userId}
-          AND cases_status = #{expectedStatus}
           AND cases_status &lt;&gt; #{newStatus}
     </update>
 </mapper>
