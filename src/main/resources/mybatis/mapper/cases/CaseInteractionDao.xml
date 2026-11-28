@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.cases.CaseInteractionDao">
+    <resultMap id="caseInteractionResultMap" type="com.teamrefund.gre.entity.cases.CaseInteraction">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="runId" column="run_id"/>
+        <result property="interactionType" column="interaction_type"/>
+        <result property="prompt" column="prompt"/>
+        <result property="options" column="options"/>
+        <result property="response" column="response"/>
+        <result property="caseInteractionsStatus" column="case_interactions_status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="respondedAt" column="responded_at"/>
+    </resultMap>
+
+    <sql id="ownedCaseFilter">
+        case_id = #{caseId}
+        AND EXISTS (
+            SELECT 1 FROM cases WHERE id = #{caseId} AND user_id = #{userId}
+        )
+    </sql>
+
+    <sql id="listFilter">
+        <include refid="ownedCaseFilter"/>
+        <if test="status != null">
+            AND case_interactions_status = #{status}
+        </if>
+    </sql>
+
+    <insert id="insertInteraction" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO case_interactions (case_id, run_id, interaction_type, prompt, options)
+        SELECT run.case_id, run.id, #{interactionType}, #{prompt},
+               CAST(#{options, jdbcType=VARCHAR} AS jsonb)
+        FROM orchestrator_runs run
+        WHERE run.id = #{runId}
+          AND run.case_id = #{caseId}
+    </insert>
+
+    <select id="findByCaseIdAndUserId" resultMap="caseInteractionResultMap">
+        SELECT id, case_id, run_id, interaction_type, prompt, options, response,
+               case_interactions_status, created_at, responded_at
+        FROM case_interactions
+        WHERE <include refid="listFilter"/>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit, jdbcType=INTEGER} OFFSET #{offset}
+    </select>
+
+    <select id="countByCaseIdAndUserId" resultType="long">
+        SELECT COUNT(*)
+        FROM case_interactions
+        WHERE <include refid="listFilter"/>
+    </select>
+
+    <update id="answerInteraction">
+        UPDATE case_interactions
+        SET response = CAST(#{response, jdbcType=VARCHAR} AS jsonb),
+            case_interactions_status = 'ANSWERED',
+            responded_at = CURRENT_TIMESTAMP
+        WHERE <include refid="ownedCaseFilter"/>
+          AND id = #{interactionId}
+          AND case_interactions_status = 'PENDING'
+    </update>
+</mapper>

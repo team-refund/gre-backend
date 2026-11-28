@@ -11,7 +11,7 @@ public class FreePost {
   private String title;
   private String content;
   private Integer viewCount;
-  private Integer likeCount;
+  // private Integer likeCount; 추후 검토
   private Instant createdAt;
   private Instant updatedAt;
 }

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.cases.CaseStatusHistoryDao">
+    <resultMap id="caseStatusHistoryResultMap" type="com.teamrefund.gre.entity.cases.CaseStatusHistory">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="caseTimelineStatus" column="case_timeline_status"/>
+        <result property="description" column="description"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insertHistory">
+        INSERT INTO case_status_histories (case_id, case_timeline_status, description)
+        VALUES (#{caseId}, #{status, jdbcType=VARCHAR}, #{description, jdbcType=VARCHAR})
+    </insert>
+
+    <select id="findByCaseIdAndUserId" resultMap="caseStatusHistoryResultMap">
+        SELECT history.id, history.case_id, history.case_timeline_status,
+               history.description, history.created_at
+        FROM case_status_histories history
+        JOIN cases ON cases.id = history.case_id
+        WHERE history.case_id = #{caseId}
+          AND cases.user_id = #{userId}
+        ORDER BY history.created_at DESC, history.id DESC
+        LIMIT #{limit, jdbcType=INTEGER} OFFSET #{offset}
+    </select>
+</mapper>

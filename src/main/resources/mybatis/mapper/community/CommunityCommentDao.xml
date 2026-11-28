@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.community.CommunityCommentDao">
+    <resultMap id="result" type="com.teamrefund.gre.entity.community.CommunityComment">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="freePostId" column="free_post_id"/>
+        <result property="questionPostId" column="question_post_id"/>
+        <result property="disputePostId" column="dispute_post_id"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, user_id, free_post_id, question_post_id, dispute_post_id,
+        content, created_at, updated_at
+    </sql>
+
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="comment.id" keyColumn="id">
+        INSERT INTO community_comments (
+            user_id, free_post_id, question_post_id, dispute_post_id, content
+        )
+        SELECT #{comment.userId}, #{comment.freePostId, jdbcType=BIGINT},
+               #{comment.questionPostId, jdbcType=BIGINT}, #{comment.disputePostId, jdbcType=BIGINT},
+               #{comment.content}
+        WHERE num_nonnulls(
+            CAST(#{comment.freePostId, jdbcType=BIGINT} AS bigint),
+            CAST(#{comment.questionPostId, jdbcType=BIGINT} AS bigint),
+            CAST(#{comment.disputePostId, jdbcType=BIGINT} AS bigint)
+        ) = 1
+    </insert>
+
+    <update id="updateComment">
+        UPDATE community_comments
+        SET content = #{content},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{commentId}
+          AND user_id = #{userId}
+    </update>
+
+    <delete id="deleteComment">
+        DELETE FROM community_comments
+        WHERE id = #{commentId}
+          AND user_id = #{userId}
+    </delete>
+
+    <select id="findPageByPost" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM community_comments
+        WHERE
+        <choose>
+            <when test='boardType == "free"'>free_post_id = #{postId}</when>
+            <when test='boardType == "questions"'>question_post_id = #{postId}</when>
+            <when test='boardType == "disputes"'>dispute_post_id = #{postId}</when>
+            <otherwise>FALSE</otherwise>
+        </choose>
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <select id="findById" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM community_comments
+        WHERE id = #{commentId}
+    </select>
+</mapper>
