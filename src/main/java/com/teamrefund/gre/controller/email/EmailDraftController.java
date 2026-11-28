@@ -58,17 +58,17 @@ public class EmailDraftController {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
-  // 현재 내용을 저장하고 초안 상태를 유지합니다.
+  // 현재 내용을 저장하고 초안을 승인합니다.
   @PostMapping("/{draftId}/approve")
   public DraftApprovalResponse approveDraft(
       Principal principal,
       @PathVariable("draftId") Long draftId,
       @Valid @RequestBody(required = false) EmailDraftApprovalRequest request) {
-    var savedAt = drafts.saveDraft(principal.getName(), draftId, request);
-    return new DraftApprovalResponse(draftId, EmailDraftStatus.DRAFT, savedAt);
+    var savedAt = drafts.approveDraft(principal.getName(), draftId, request);
+    return new DraftApprovalResponse(draftId, EmailDraftStatus.FINALIZED, savedAt);
   }
 
-  // 저장한 초안을 확정하고 Gmail 발송을 요청합니다.
+  // 승인된 초안의 Gmail 발송을 요청합니다.
   @PostMapping("/{draftId}/send")
   public ResponseEntity<EmailSendAttemptResponse> sendDraft(
       Principal principal,

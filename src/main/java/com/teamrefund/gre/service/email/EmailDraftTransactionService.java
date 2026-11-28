@@ -40,9 +40,9 @@ public class EmailDraftTransactionService {
 
   public record DraftDetails(EmailDraftRow draft, List<Long> attachmentEvidenceIds) {}
 
-  /** 초안 행을 잠그고 편집 내용을 저장하며 DRAFT 상태를 유지합니다. */
+  /** 초안 행을 잠그고 사용자가 확인한 내용과 승인 상태를 함께 저장합니다. */
   @Transactional
-  public Instant saveDraft(String loginId, long draftId, EmailDraftApprovalRequest request) {
+  public Instant approveDraft(String loginId, long draftId, EmailDraftApprovalRequest request) {
     var draft = requireOwnedDraft(loginId, draftId);
     if (draft.getStatus() != EmailDraftStatus.DRAFT) {
       throw new BusinessException(ErrorCode.INVALID_CASE_STATE);
@@ -66,7 +66,7 @@ public class EmailDraftTransactionService {
         draftId, draft.getRecipientEmail(), draft.getSubject(), draft.getBody());
   }
 
-  /** 중복 요청을 확인하고 발송 시도 등록과 FINALIZED 전환을 함께 처리합니다. */
+  /** 승인된 초안의 발송을 선점하고 반복 요청에는 기존 시도를 반환합니다. */
   @Transactional
   public SendClaim claimSend(String loginId, long draftId, String requestKey) {
     var draft = requireOwnedDraft(loginId, draftId);
@@ -74,7 +74,7 @@ public class EmailDraftTransactionService {
     if (existing != null) {
       return new SendClaim(existing, null, null, List.of());
     }
-    if (draft.getStatus() != EmailDraftStatus.DRAFT) {
+    if (draft.getStatus() != EmailDraftStatus.FINALIZED) {
       throw new BusinessException(ErrorCode.INVALID_CASE_STATE);
     }
     validateContent(draft);
@@ -93,7 +93,6 @@ public class EmailDraftTransactionService {
     if (drafts.insertSendAttempt(draftId, connection.getId(), key, messageId) != 1) {
       throw new BusinessException(ErrorCode.INVALID_CASE_STATE);
     }
-    drafts.updateDraftStatus(draftId, EmailDraftStatus.FINALIZED);
     return new SendClaim(
         drafts.findAttempt(draftId), draft, connection, drafts.findAttachments(draftId));
   }

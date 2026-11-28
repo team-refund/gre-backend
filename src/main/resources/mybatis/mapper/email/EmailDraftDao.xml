@@ -74,6 +74,7 @@
         SET recipient_email = #{to},
             subject = #{subject},
             body = #{body},
+            email_drafts_status = 'FINALIZED',
             updated_at = now()
         WHERE id = #{draftId}
         RETURNING updated_at
@@ -109,7 +110,9 @@
 
     <insert id="insertSendAttempt">
         INSERT INTO email_send_attempts (email_draft_id, gmail_connection_id, request_key, message_id_header)
-        VALUES (#{draftId}, #{connectionId}, #{requestKey}, #{messageIdHeader})
+        SELECT id, #{connectionId}, #{requestKey}, #{messageIdHeader}
+        FROM email_drafts
+        WHERE id = #{draftId} AND email_drafts_status = 'FINALIZED'
         ON CONFLICT DO NOTHING
     </insert>
 

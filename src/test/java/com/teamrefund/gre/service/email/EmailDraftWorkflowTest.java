@@ -1,11 +1,11 @@
 package com.teamrefund.gre.service.email;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -40,7 +40,7 @@ class EmailDraftWorkflowTest {
       new EmailDraftTransactionService(dao, mock(CaseEmailDao.class), connections);
 
   @Test
-  void approveSavesEditsWithoutFinalizing() {
+  void approvalSavesEditsWithoutCallingGmail() {
     var draft = draft();
     var request = new EmailDraftApprovalRequest();
     request.setTo("seller@example.test");
@@ -51,15 +51,16 @@ class EmailDraftWorkflowTest {
     when(dao.updateDraft(DRAFT_ID, request.getTo(), request.getSubject(), request.getBody()))
         .thenReturn(savedAt);
 
-    assertThat(transactions.saveDraft(LOGIN_ID, DRAFT_ID, request)).isEqualTo(savedAt);
+    assertThat(transactions.approveDraft(LOGIN_ID, DRAFT_ID, request)).isEqualTo(savedAt);
 
     verify(dao, never()).updateDraftStatus(anyLong(), any(EmailDraftStatus.class));
     verifyNoInteractions(connections);
   }
 
   @Test
-  void sendClaimsTheDraftBeforeFinalizingIt() {
+  void sendClaimsAnApprovedDraft() {
     var draft = draft();
+    draft.setStatus(EmailDraftStatus.FINALIZED);
     var connection = new GmailConnection();
     connection.setId(3L);
     connection.setStatus(GmailConnectionStatus.CONNECTED);
@@ -73,9 +74,21 @@ class EmailDraftWorkflowTest {
     var claim = transactions.claimSend(LOGIN_ID, DRAFT_ID, "click-123");
 
     assertThat(claim.attempt()).isSameAs(attempt);
-    var writes = inOrder(dao);
-    writes.verify(dao).insertSendAttempt(eq(DRAFT_ID), eq(3L), eq("click-123"), anyString());
-    writes.verify(dao).updateDraftStatus(DRAFT_ID, EmailDraftStatus.FINALIZED);
+    verify(dao).insertSendAttempt(eq(DRAFT_ID), eq(3L), eq("click-123"), anyString());
+  }
+
+  @Test
+  void sendRejectsAnUnapprovedDraftBeforeCallingGmail() {
+    when(dao.lockOwnedDraft(DRAFT_ID, LOGIN_ID)).thenReturn(draft());
+    var gmail = mock(GmailSendService.class);
+
+    assertThatThrownBy(
+            () -> new EmailDraftSendService(transactions, gmail).send(LOGIN_ID, DRAFT_ID, "key"))
+        .isInstanceOfSatisfying(
+            BusinessException.class,
+            error -> assertThat(error.getErrorCode()).isEqualTo(ErrorCode.INVALID_CASE_STATE));
+
+    verifyNoInteractions(gmail, connections);
   }
 
   @Test
