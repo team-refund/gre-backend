@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.teamrefund.gre.dao.email.EmailDraftDao">
     <resultMap id="emailDraft" type="com.teamrefund.gre.entity.email.EmailDraft">
         <id property="id" column="id"/>
@@ -13,6 +12,103 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
+
+    <resultMap id="draft" type="com.teamrefund.gre.dto.query.email.EmailDraftRow">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="purpose" column="purpose"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="recipientEmail" column="recipient_email"/>
+        <result property="subject" column="subject"/>
+        <result property="body" column="body"/>
+        <result property="status" column="email_drafts_status"/>
+    </resultMap>
+    <resultMap id="attempt" type="com.teamrefund.gre.dto.query.email.EmailSendAttempt">
+        <id property="attemptId" column="id"/>
+        <result property="draftId" column="email_draft_id"/>
+        <result property="status" column="email_send_attempts_status"/>
+        <result property="messageIdHeader" column="message_id_header"/>
+        <result property="gmailMessageId" column="gmail_message_id"/>
+        <result property="gmailThreadId" column="gmail_thread_id"/>
+        <result property="sentAt" column="sent_at"/>
+        <result property="safeErrorCode" column="error_message"/>
+    </resultMap>
+    <resultMap id="attachment" type="com.teamrefund.gre.dto.query.email.EmailDraftRow$Attachment">
+        <result property="filePath" column="file_path"/>
+        <result property="originalFilename" column="original_filename"/>
+    </resultMap>
+    <sql id="ownedDraft">
+        SELECT d.id, d.case_id, d.purpose, d.recipient_email, d.subject, d.body, d.email_drafts_status, d.updated_at
+        FROM email_drafts d
+        JOIN cases c ON c.id = d.case_id
+        JOIN users u ON u.id = c.user_id
+        WHERE d.id = #{draftId}
+          AND u.login_id = #{loginId} AND u.users_status = 'ACTIVE' AND u.deleted_at IS NULL
+    </sql>
+    <select id="findOwnedDraft" resultMap="draft">
+        <include refid="ownedDraft"/>
+    </select>
+    <select id="findAttachmentEvidenceIds" resultType="long">
+        SELECT a.evidence_id
+        FROM email_draft_attachments a
+        WHERE a.email_draft_id = #{draftId}
+        ORDER BY a.id
+    </select>
+    <select id="lockOwnedDraft" resultMap="draft">
+        <include refid="ownedDraft"/>
+        FOR UPDATE OF d
+    </select>
+    <select id="updateDraft" resultType="java.time.Instant" affectData="true" flushCache="true">
+        UPDATE email_drafts
+        SET recipient_email = #{to}, subject = #{subject}, body = #{body}, updated_at = now()
+        WHERE id = #{draftId}
+        RETURNING updated_at
+    </select>
+    <delete id="deleteAttachments">
+        DELETE FROM email_draft_attachments WHERE email_draft_id = #{draftId}
+    </delete>
+    <insert id="addAttachment">
+        INSERT INTO email_draft_attachments (email_draft_id, evidence_id)
+        SELECT #{draftId}, id FROM case_evidences WHERE id = #{evidenceId} AND case_id = #{caseId}
+    </insert>
+    <select id="findAttachments" resultMap="attachment">
+        SELECT e.file_path, e.original_filename
+        FROM email_draft_attachments a
+        JOIN case_evidences e ON e.id = a.evidence_id
+        WHERE a.email_draft_id = #{draftId}
+        ORDER BY a.id
+    </select>
+    <select id="findAttempt" resultMap="attempt">
+        SELECT id, email_draft_id, email_send_attempts_status, gmail_message_id, gmail_thread_id,
+               sent_at, error_message, message_id_header
+        FROM email_send_attempts WHERE email_draft_id = #{draftId}
+    </select>
+    <insert id="insertSendAttempt">
+        INSERT INTO email_send_attempts (email_draft_id, gmail_connection_id, request_key, message_id_header)
+        VALUES (#{draftId}, #{connectionId}, #{requestKey}, #{messageIdHeader})
+        ON CONFLICT DO NOTHING
+    </insert>
+    <select id="existsOwnedDraft" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM email_drafts d
+            JOIN cases c ON c.id = d.case_id
+            JOIN users u ON u.id = c.user_id
+            WHERE d.id = #{draftId}
+              AND u.login_id = #{loginId} AND u.users_status = 'ACTIVE' AND u.deleted_at IS NULL
+        )
+    </select>
+    <update id="updateDraftStatus">
+        UPDATE email_drafts SET email_drafts_status = #{status}, updated_at = now()
+        WHERE id = #{draftId}
+    </update>
+    <update id="updateAttempt">
+        UPDATE email_send_attempts
+        SET email_send_attempts_status = #{status}, gmail_message_id = #{gmailMessageId},
+            gmail_thread_id = #{gmailThreadId}, error_message = #{errorCode},
+            sent_at = CASE WHEN #{status} = 'SENT' THEN now() ELSE NULL END,
+            updated_at = now()
+        WHERE id = #{attemptId} AND email_send_attempts_status = 'SENDING'
+    </update>
 
     <!-- 최초 초안을 저장한다. DRAFT 상태와 생성·수정 시각은 DB 기본값을 사용한다. -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
@@ -66,7 +162,7 @@
     <!-- 발송 시도가 SENT로 바뀐 뒤 초안도 SENT로 바꾼다. 두 변경을 함께 저장한다. -->
     <update id="updateToSent">
         UPDATE email_drafts AS draft
-        SET emal_drafts_status = 'SENT', updated_at = now()
+        SET email_drafts_status = 'SENT', updated_at = now()
         WHERE draft.id = #{draftId}
           AND draft.email_drafts_status = 'FINALIZED'
           AND EXISTS (

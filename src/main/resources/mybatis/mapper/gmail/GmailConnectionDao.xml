@@ -17,7 +17,7 @@
         SELECT gc.id,
                u.id AS user_id,
                gc.google_email,
-               COALESCE(gc.status, 'DISCONNECTED') AS status,
+               COALESCE(gc.gmail_connections_status, 'DISCONNECTED') AS status,
                gc.oauth_client_registration_id,
                gc.oauth_principal_name,
                gc.connected_at,
@@ -25,7 +25,7 @@
         FROM users u
         LEFT JOIN gmail_connections gc ON gc.user_id = u.id
         WHERE u.login_id = #{loginId}
-          AND u.status = 'ACTIVE' AND u.deleted_at IS NULL
+          AND u.users_status = 'ACTIVE' AND u.deleted_at IS NULL
     </select>
     <resultMap id="authorizedClient" type="com.teamrefund.gre.entity.gmail.GmailAuthorizedClient">
         <id property="clientRegistrationId" column="client_registration_id"/>
@@ -43,7 +43,7 @@
     <select id="lockActiveUser" resultType="java.lang.Long">
         SELECT id FROM users
         WHERE id = #{userId} AND login_id = #{loginId}
-          AND status = 'ACTIVE' AND deleted_at IS NULL
+          AND users_status = 'ACTIVE' AND deleted_at IS NULL
         FOR UPDATE
     </select>
 
@@ -77,13 +77,35 @@
 
     <insert id="upsertConnection">
         INSERT INTO gmail_connections (
-            user_id, google_email, status, oauth_client_registration_id, oauth_principal_name
+            user_id, google_email, gmail_connections_status, oauth_client_registration_id, oauth_principal_name
         ) VALUES (#{userId}, #{googleEmail}, 'CONNECTED', 'gmail', #{principalName})
         ON CONFLICT (user_id) DO UPDATE SET
             google_email = EXCLUDED.google_email,
-            status = EXCLUDED.status,
+            gmail_connections_status = EXCLUDED.gmail_connections_status,
             oauth_client_registration_id = EXCLUDED.oauth_client_registration_id,
             oauth_principal_name = EXCLUDED.oauth_principal_name,
             updated_at = now()
     </insert>
+    <update id="updateReauthRequired">
+        UPDATE gmail_connections
+        SET gmail_connections_status = 'REAUTH_REQUIRED', updated_at = now()
+        WHERE user_id = #{userId}
+          AND oauth_client_registration_id = 'gmail'
+          AND oauth_principal_name = #{principalName}
+          AND gmail_connections_status = 'CONNECTED'
+    </update>
+    <update id="disconnect">
+        UPDATE gmail_connections
+        SET gmail_connections_status = 'DISCONNECTED',
+            oauth_client_registration_id = NULL,
+            oauth_principal_name = NULL,
+            updated_at = now()
+        WHERE user_id = #{userId}
+    </update>
+
+    <delete id="deleteAuthorizedClient">
+        DELETE FROM oauth2_authorized_client
+        WHERE client_registration_id = 'gmail'
+          AND principal_name = #{principalName}
+    </delete>
 </mapper>
