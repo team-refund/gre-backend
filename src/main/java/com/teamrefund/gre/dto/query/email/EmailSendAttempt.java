@@ -8,6 +8,7 @@ import lombok.Data;
 public class EmailSendAttempt {
   private long attemptId;
   private long draftId;
+  private Long messageId;
   private EmailSendStatus status;
   private String messageIdHeader;
   private String gmailMessageId;

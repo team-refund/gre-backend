@@ -9,6 +9,7 @@ import lombok.Getter;
 public class EmailSendAttemptResponse {
   private final long attemptId;
   private final long draftId;
+  private final Long messageId;
   private final EmailSendStatus status;
   private final String gmailMessageId;
   private final String gmailThreadId;
@@ -18,6 +19,7 @@ public class EmailSendAttemptResponse {
   public EmailSendAttemptResponse(EmailSendAttempt attempt) {
     this.attemptId = attempt.getAttemptId();
     this.draftId = attempt.getDraftId();
+    this.messageId = attempt.getMessageId();
     this.status = attempt.getStatus();
     this.gmailMessageId = attempt.getGmailMessageId();
     this.gmailThreadId = attempt.getGmailThreadId();

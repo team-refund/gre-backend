@@ -27,6 +27,7 @@
 
     <resultMap id="attempt" type="com.teamrefund.gre.dto.query.email.EmailSendAttempt">
         <id property="attemptId" column="id"/>
+        <result property="messageId" column="message_id"/>
         <result property="draftId" column="email_draft_id"/>
         <result property="status" column="email_send_attempts_status"/>
         <result property="messageIdHeader" column="message_id_header"/>
@@ -102,10 +103,20 @@
     </select>
 
     <select id="findAttempt" resultMap="attempt">
-        SELECT id, email_draft_id, email_send_attempts_status, gmail_message_id, gmail_thread_id,
-               sent_at, error_message, message_id_header
-        FROM email_send_attempts
-        WHERE email_draft_id = #{draftId}
+        SELECT attempt.id, attempt.email_draft_id, attempt.email_send_attempts_status,
+               attempt.gmail_message_id, attempt.gmail_thread_id, attempt.sent_at,
+               attempt.error_message, attempt.message_id_header, message.id AS message_id
+        FROM email_send_attempts AS attempt
+        JOIN email_drafts AS draft ON draft.id = attempt.email_draft_id
+        LEFT JOIN case_email_threads AS thread
+          ON thread.case_id = draft.case_id
+         AND thread.gmail_connection_id = attempt.gmail_connection_id
+         AND thread.gmail_thread_id = attempt.gmail_thread_id
+        LEFT JOIN email_messages AS message
+          ON message.case_email_thread_id = thread.id
+         AND message.gmail_message_id = attempt.gmail_message_id
+         AND attempt.email_send_attempts_status = 'SENT'
+        WHERE attempt.email_draft_id = #{draftId}
     </select>
 
     <insert id="insertSendAttempt">

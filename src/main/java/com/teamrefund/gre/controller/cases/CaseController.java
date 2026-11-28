@@ -107,15 +107,6 @@ public class CaseController {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
-  // 사건과 관련해 주고받은 이메일을 조회합니다.
-  @GetMapping("/{caseId}/email-messages")
-  public ResponseEntity<Void> listEmailMessages(
-      @PathVariable("caseId") Long caseId,
-      @RequestParam(name = "page", required = false) Integer page,
-      @RequestParam(name = "size", required = false) Integer size) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
-  }
-
   // 판매자 회신 분석과 사건 재판단을 요청합니다.
   @PostMapping("/{caseId}/replies/analyze")
   public ResponseEntity<Void> analyzeReply(

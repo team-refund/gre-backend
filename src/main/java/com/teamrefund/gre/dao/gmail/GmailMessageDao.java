@@ -17,4 +17,7 @@ public interface GmailMessageDao {
   // 사건의 송수신 메일을 최신순으로 페이지 조회한다.
   List<CaseEmailMessageResult> findPageByCaseId(
       @Param("caseId") long caseId, @Param("offset") long offset, @Param("limit") int limit);
+
+  CaseEmailMessageResult findByCaseIdAndMessageId(
+      @Param("caseId") long caseId, @Param("messageId") long messageId);
 }
