@@ -23,6 +23,8 @@ public interface CaseDao {
   // 사건 id랑 사용자 id가 일치하는 사건이 있는지 확인
   Case findByIdAndUserId(@Param("caseId") long caseId, @Param("userId") long userId);
 
+  Case lockByIdAndUserId(@Param("caseId") long caseId, @Param("userId") long userId);
+
   // 본인 사건의 DB에 저장된 현재 상태가 expectedStatus와 같으면 newStatus로 변경
   int updateStatus(
       @Param("caseId") long caseId,

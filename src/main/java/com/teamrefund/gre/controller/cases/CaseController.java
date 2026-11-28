@@ -1,5 +1,24 @@
 package com.teamrefund.gre.controller.cases;
 
+import com.teamrefund.gre.dto.request.cases.CaseRegistrationRequest;
+import com.teamrefund.gre.dto.request.cases.CaseRequirementUpdateRequest;
+import com.teamrefund.gre.dto.response.cases.CaseDetailResponse;
+import com.teamrefund.gre.dto.response.cases.CaseDetailResponse.EmailDraftSummary;
+import com.teamrefund.gre.dto.response.cases.CaseEvidenceResponse;
+import com.teamrefund.gre.dto.response.cases.CaseListResponse;
+import com.teamrefund.gre.dto.response.cases.CaseListResponse.CaseSummary;
+import com.teamrefund.gre.dto.response.cases.CaseRegistrationResponse;
+import com.teamrefund.gre.dto.response.cases.CaseRunAcceptedResponse;
+import com.teamrefund.gre.dto.response.orchestrator.OrchestratorRunResponse;
+import com.teamrefund.gre.entity.cases.Case;
+import com.teamrefund.gre.service.cases.CaseRegistrationService;
+import com.teamrefund.gre.service.cases.CaseRequirementService;
+import com.teamrefund.gre.service.cases.CaseService;
+import jakarta.validation.Valid;
+import java.net.URI;
+import java.security.Principal;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,26 +35,76 @@ import tools.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/api/cases")
+@RequiredArgsConstructor
 public class CaseController {
+  private final CaseService caseService;
+  private final CaseRegistrationService caseRegistrationService;
+  private final CaseRequirementService caseRequirementService;
+
   // 새 환불 사건을 등록합니다.
   @PostMapping
-  public ResponseEntity<Void> createCase(@RequestBody JsonNode request) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<CaseRegistrationResponse> createCase(
+      Principal principal, @Valid @RequestBody CaseRegistrationRequest request) {
+    var result = caseRegistrationService.registerCase(principal.getName(), request);
+    return ResponseEntity.accepted()
+        .location(URI.create("/api/cases/" + result.getCaseId()))
+        .body(new CaseRegistrationResponse(result.getCaseId(), result.getRunId()));
   }
 
   // 로그인한 사용자의 사건 목록을 조회합니다.
   @GetMapping
-  public ResponseEntity<Void> listCases(
-      @RequestParam(name = "page", defaultValue = "0") Integer page,
-      @RequestParam(name = "size", defaultValue = "20") Integer size,
+  public CaseListResponse listCases(
+      Principal principal,
+      @RequestParam(name = "page", defaultValue = "0") int page,
+      @RequestParam(name = "size", defaultValue = "20") int size,
       @RequestParam(name = "status", required = false) String status) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    var result =
+        caseService.listCases(principal == null ? null : principal.getName(), page, size, status);
+    var cases = result.getCases().stream().map(this::toCaseSummary).toList();
+    return new CaseListResponse(cases, page, size, result.getTotalElements());
   }
 
-  // 사건 상세 정보를 조회합니다.
   @GetMapping("/{caseId}")
-  public ResponseEntity<Void> getCase(@PathVariable("caseId") Long caseId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public CaseDetailResponse getCase(Principal principal, @PathVariable("caseId") long caseId) {
+    var detail = caseService.getCaseDetail(principal == null ? null : principal.getName(), caseId);
+    var item = detail.getRefundCase();
+    var latestRun = detail.getLatestRun();
+    var drafts =
+        detail.getEmailDrafts().stream()
+            .map(
+                draft ->
+                    new EmailDraftSummary(
+                        draft.getId(), draft.getSubject(), draft.getStatus(), draft.getUpdatedAt()))
+            .toList();
+    return new CaseDetailResponse(
+        item.getId(),
+        item.getTitle(),
+        item.getCaseType(),
+        item.getCasesStatus(),
+        item.getMerchantName(),
+        item.getMerchantEmail(),
+        item.getPurchaseSite(),
+        item.getOrderNumber(),
+        item.getPurchaseDate(),
+        item.getPaymentAmount(),
+        item.getCreatedAt(),
+        item.getUpdatedAt(),
+        item.getResolvedAt(),
+        detail.getRequirement(),
+        latestRun == null ? null : new OrchestratorRunResponse(latestRun),
+        drafts,
+        detail.getEvidences().stream().map(CaseEvidenceResponse::new).toList());
+  }
+
+  private CaseSummary toCaseSummary(Case item) {
+    return new CaseSummary(
+        item.getId(),
+        item.getTitle(),
+        item.getCaseType(),
+        item.getCasesStatus(),
+        item.getMerchantName(),
+        item.getCreatedAt(),
+        item.getUpdatedAt());
   }
 
   // 사건 상태 변경 이력을 조회합니다.
@@ -58,15 +127,21 @@ public class CaseController {
 
   // 사건에 연결된 증빙 목록을 조회합니다.
   @GetMapping("/{caseId}/evidences")
-  public ResponseEntity<Void> listEvidences(@PathVariable("caseId") Long caseId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public List<CaseEvidenceResponse> listEvidences(
+      Principal principal, @PathVariable("caseId") long caseId) {
+    return caseService.listEvidences(principal.getName(), caseId).stream()
+        .map(CaseEvidenceResponse::new)
+        .toList();
   }
 
-  // 증빙 파일과 메타데이터를 조회합니다.
+  // 증빙 파일의 메타데이터를 조회합니다.
   @GetMapping("/{caseId}/evidences/{evidenceId}")
-  public ResponseEntity<Void> getEvidence(
-      @PathVariable("caseId") Long caseId, @PathVariable("evidenceId") Long evidenceId) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public CaseEvidenceResponse getEvidence(
+      Principal principal,
+      @PathVariable("caseId") long caseId,
+      @PathVariable("evidenceId") long evidenceId) {
+    return new CaseEvidenceResponse(
+        caseService.getEvidence(principal.getName(), caseId, evidenceId));
   }
 
   // 사건에서 사용자 응답이 필요한 요청을 조회합니다.
@@ -88,11 +163,16 @@ public class CaseController {
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 
-  // 사건 분석 또는 재판단을 비동기로 요청합니다.
   @PostMapping("/{caseId}/runs")
-  public ResponseEntity<Void> startRun(
-      @PathVariable("caseId") Long caseId, @RequestBody JsonNode request) {
-    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  public ResponseEntity<CaseRunAcceptedResponse> submitRequirementUpdate(
+      Principal principal,
+      @PathVariable("caseId") long caseId,
+      @Valid @RequestBody CaseRequirementUpdateRequest request) {
+    var run =
+        caseRequirementService.submitRequirementUpdate(
+            principal.getName(), caseId, request.getRequestKey(), request.getRequirement());
+    return ResponseEntity.accepted()
+        .body(new CaseRunAcceptedResponse(run.getId(), run.getOrchestratorRunsStatus()));
   }
 
   // 사건의 AI 실행 이력을 조회합니다.

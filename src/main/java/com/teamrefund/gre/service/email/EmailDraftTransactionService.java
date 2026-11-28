@@ -30,18 +30,6 @@ public class EmailDraftTransactionService {
   private final CaseEmailDao caseEmails;
   private final GmailConnectionService connections;
 
-  /** 현재 사용자가 소유한 이메일 초안과 연결된 증빙 ID를 조회합니다. */
-  @Transactional(readOnly = true)
-  public DraftDetails getDraft(String loginId, long draftId) {
-    var draft = drafts.findOwnedDraft(draftId, loginId);
-    if (draft == null) {
-      throw new BusinessException(ErrorCode.EMAIL_DRAFT_NOT_FOUND);
-    }
-    return new DraftDetails(draft, drafts.findAttachmentEvidenceIds(draftId));
-  }
-
-  public record DraftDetails(EmailDraftRow draft, List<Long> attachmentEvidenceIds) {}
-
   /** 초안 행을 잠그고 사용자가 확인한 내용과 승인 상태를 함께 저장합니다. */
   @Transactional
   public Instant approveDraft(String loginId, long draftId, EmailDraftContentRequest request) {
@@ -183,16 +171,6 @@ public class EmailDraftTransactionService {
             draft.getBody(),
             "OUTBOUND",
             Instant.now()));
-  }
-
-  /** 초안 소유권을 확인하고 발송 시도를 조회합니다. */
-  @Transactional(readOnly = true)
-  public List<EmailSendAttempt> listAttempts(String loginId, long draftId) {
-    if (!drafts.existsOwnedDraft(draftId, loginId)) {
-      throw new BusinessException(ErrorCode.EMAIL_DRAFT_NOT_FOUND);
-    }
-    var attempt = drafts.findAttempt(draftId);
-    return attempt == null ? List.of() : List.of(attempt);
   }
 
   /** 현재 사용자가 소유한 초안 행을 조회해 잠급니다. */

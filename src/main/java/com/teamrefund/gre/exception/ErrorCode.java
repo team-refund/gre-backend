@@ -7,6 +7,14 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
+  INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
+  CASE_REGISTRATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "사건을 등록하지 못했습니다."),
+  CASE_NOT_FOUND(HttpStatus.NOT_FOUND, "사건을 찾을 수 없습니다."),
+  CASE_REQUIREMENT_CONFLICT(HttpStatus.CONFLICT, "현재 사건 상태 또는 기존 요청과 충돌합니다."),
+  CASE_EVIDENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "증빙을 찾을 수 없습니다."),
+  ORCHESTRATOR_RUN_NOT_FOUND(HttpStatus.NOT_FOUND, "실행을 찾을 수 없습니다."),
+  CASE_EMAIL_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "사건 이메일을 찾을 수 없습니다."),
+  EMAIL_DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "이메일 초안을 찾을 수 없습니다."),
   UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
   FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
   GMAIL_OAUTH_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Gmail 연결 설정을 확인할 수 없습니다."),
@@ -21,13 +29,9 @@ public enum ErrorCode {
   GMAIL_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 메일을 조회하지 못했습니다."),
   GMAIL_DRAFT_CREATE_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 초안 저장 결과를 확인하지 못했습니다."),
   GMAIL_THREAD_MERCHANT_MISMATCH(HttpStatus.BAD_REQUEST, "사업자 이메일이 스레드의 송수신 내역에 없습니다."),
-  CASE_NOT_FOUND(HttpStatus.NOT_FOUND, "사건을 찾을 수 없습니다."),
-  CASE_EMAIL_MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "사건 이메일을 찾을 수 없습니다."),
-  EMAIL_DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "이메일 초안을 찾을 수 없습니다."),
   INVALID_CASE_STATE(HttpStatus.CONFLICT, "현재 상태에서는 이메일 초안을 변경하거나 발송할 수 없습니다."),
   EMAIL_SEND_FAILED(HttpStatus.BAD_GATEWAY, "Gmail에서 이메일 발송을 거절했습니다."),
-  EMAIL_SEND_UNCONFIRMED(HttpStatus.BAD_GATEWAY, "이메일 발송 결과를 확인할 수 없습니다."),
-  INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 내용을 확인해 주세요.");
+  EMAIL_SEND_UNCONFIRMED(HttpStatus.BAD_GATEWAY, "이메일 발송 결과를 확인할 수 없습니다.");
   private final HttpStatus status;
   private final String message;
 }

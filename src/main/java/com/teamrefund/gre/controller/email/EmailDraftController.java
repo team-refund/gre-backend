@@ -7,6 +7,7 @@ import com.teamrefund.gre.dto.response.email.EmailDraftResponse;
 import com.teamrefund.gre.dto.response.email.EmailSendAttemptResponse;
 import com.teamrefund.gre.entity.email.EmailDraftStatus;
 import com.teamrefund.gre.entity.email.EmailSendStatus;
+import com.teamrefund.gre.service.email.EmailDraftQueryService;
 import com.teamrefund.gre.service.email.EmailDraftSendService;
 import com.teamrefund.gre.service.email.EmailDraftTransactionService;
 import jakarta.validation.Valid;
@@ -28,14 +29,15 @@ import tools.jackson.databind.JsonNode;
 @RequestMapping("/api/email-drafts")
 @RequiredArgsConstructor
 public class EmailDraftController {
+  private final EmailDraftQueryService draftQueryService;
   private final EmailDraftTransactionService drafts;
   private final EmailDraftSendService sendService;
 
   // 최신 이메일 초안의 상세 정보와 미리보기를 조회합니다.
   @GetMapping("/{draftId}")
   public EmailDraftResponse getDraft(Principal principal, @PathVariable("draftId") Long draftId) {
-    var details = drafts.getDraft(principal.getName(), draftId);
-    return new EmailDraftResponse(details.draft(), details.attachmentEvidenceIds());
+    var details = draftQueryService.getDraft(principal.getName(), draftId);
+    return new EmailDraftResponse(details.getDraft(), details.getAttachmentEvidenceIds());
   }
 
   // 현재 이메일 초안의 내용을 직접 수정합니다.
@@ -89,8 +91,7 @@ public class EmailDraftController {
   @GetMapping("/{draftId}/send-attempts")
   public List<EmailSendAttemptResponse> listSendAttempts(
       Principal principal, @PathVariable("draftId") Long draftId) {
-    return drafts.listAttempts(principal.getName(), draftId).stream()
-        .map(EmailSendAttemptResponse::new)
-        .toList();
+    var attempt = draftQueryService.getSendAttempt(principal.getName(), draftId);
+    return attempt == null ? List.of() : List.of(new EmailSendAttemptResponse(attempt));
   }
 }

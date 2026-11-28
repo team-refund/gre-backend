@@ -14,6 +14,15 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <resultMap id="emailDraftSummary" type="com.teamrefund.gre.dto.query.email.EmailDraftSummary">
+        <constructor>
+            <idArg column="id" javaType="_long"/>
+            <arg column="subject" javaType="string"/>
+            <arg column="email_drafts_status" javaType="string"/>
+            <arg column="updated_at" javaType="java.time.Instant"/>
+        </constructor>
+    </resultMap>
+
     <resultMap id="draft" type="com.teamrefund.gre.dto.query.email.EmailDraftRow">
         <id property="id" column="id"/>
         <result property="caseId" column="case_id"/>
@@ -158,6 +167,13 @@
         WHERE id = #{attemptId}
           AND email_send_attempts_status = 'SENDING'
     </update>
+
+    <select id="findSummariesByCaseId" resultMap="emailDraftSummary">
+        SELECT id, subject, email_drafts_status, updated_at
+        FROM email_drafts
+        WHERE case_id = #{caseId}
+        ORDER BY updated_at DESC, id DESC
+    </select>
 
     <!-- 최초 초안을 저장한다. DRAFT 상태와 생성·수정 시각은 DB 기본값을 사용한다. -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">

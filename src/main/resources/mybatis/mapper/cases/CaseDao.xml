@@ -76,4 +76,12 @@
           AND cases_status = #{expectedStatus}
           AND cases_status &lt;&gt; #{newStatus}
     </update>
+
+    <select id="lockByIdAndUserId" resultMap="caseResultMap" useCache="false" flushCache="true">
+        SELECT <include refid="caseColumns"/>
+        FROM cases
+        WHERE id = #{caseId}
+          AND user_id = #{userId}
+        FOR UPDATE
+    </select>
 </mapper>

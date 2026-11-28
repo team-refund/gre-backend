@@ -1,5 +1,6 @@
 package com.teamrefund.gre.entity.cases;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import lombok.Data;
@@ -17,7 +18,7 @@ public class Case {
   private String merchantEmail;
   private String orderNumber;
   private LocalDate purchaseDate;
-  private int paymentAmount;
+  private BigDecimal paymentAmount;
   private Instant createdAt;
   private Instant updatedAt;
   private Instant resolvedAt;

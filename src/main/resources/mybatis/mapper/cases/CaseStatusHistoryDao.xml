@@ -25,4 +25,13 @@
         ORDER BY history.created_at DESC, history.id DESC
         LIMIT #{limit, jdbcType=INTEGER} OFFSET #{offset}
     </select>
+
+    <select id="findRegistrationPrompt" resultType="string">
+        SELECT description
+        FROM case_status_histories
+        WHERE case_id = #{caseId}
+          AND case_timeline_status = 'REGISTERED'
+        ORDER BY created_at, id
+        LIMIT 1
+    </select>
 </mapper>

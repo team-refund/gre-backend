@@ -13,6 +13,8 @@ public interface CaseStatusHistoryDao {
     return insertHistory(caseId, status, userPrompt);
   }
 
+  String findRegistrationPrompt(@Param("caseId") long caseId);
+
   // 사건 상태가 바뀔 때 새 상태와 설명을 타임라인에 추가한다.
   int insertHistory(
       @Param("caseId") long caseId,

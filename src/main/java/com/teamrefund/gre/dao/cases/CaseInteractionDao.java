@@ -10,6 +10,20 @@ public interface CaseInteractionDao {
   // AI가 사건에 대해 사용자에게 추가 질문을 남길 때 사용
   int insertInteraction(CaseInteraction interaction);
 
+  int insertRequirementUpdate(
+      @Param("caseId") long caseId,
+      @Param("runId") long runId,
+      @Param("prompt") String prompt,
+      @Param("requirement") String requirement);
+
+  String findLatestRequirement(
+      @Param("caseId") long caseId, @Param("triggerKeyPrefix") String triggerKeyPrefix);
+
+  String findRequirementByRunId(
+      @Param("caseId") long caseId,
+      @Param("runId") long runId,
+      @Param("triggerKeyPrefix") String triggerKeyPrefix);
+
   // 본인 사건의 질문과 답변 목록 조회. 상태가 있으면 해당 상태만 가져옴
   List<CaseInteraction> findByCaseIdAndUserId(
       @Param("caseId") long caseId,

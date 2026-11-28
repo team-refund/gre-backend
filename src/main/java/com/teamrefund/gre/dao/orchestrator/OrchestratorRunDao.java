@@ -12,6 +12,8 @@ public interface OrchestratorRunDao {
   // 실행 ID로 현재 상태, 진행 결과, 다음 작업과 오류를 조회한다.
   OrchestratorRun findById(@Param("runId") long runId);
 
+  OrchestratorRun findOwnedById(@Param("runId") long runId, @Param("loginId") String loginId);
+
   // 이벤트가 이미 접수됐을 때 사건 ID, 실행 계기, 이벤트 키로 기존 실행을 찾는다.
   OrchestratorRun findByTrigger(
       @Param("caseId") long caseId,

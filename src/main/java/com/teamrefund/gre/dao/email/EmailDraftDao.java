@@ -1,6 +1,7 @@
 package com.teamrefund.gre.dao.email;
 
 import com.teamrefund.gre.dto.query.email.EmailDraftRow;
+import com.teamrefund.gre.dto.query.email.EmailDraftSummary;
 import com.teamrefund.gre.dto.query.email.EmailSendAttempt;
 import com.teamrefund.gre.entity.email.EmailDraft;
 import com.teamrefund.gre.entity.email.EmailDraftStatus;
@@ -14,6 +15,8 @@ import org.apache.ibatis.annotations.Param;
 public interface EmailDraftDao {
   // 이메일 작성 에이전트가 만든 최초 초안을 저장하고 생성된 초안 ID를 draft.id에 설정한다.
   int insert(EmailDraft draft);
+
+  List<EmailDraftSummary> findSummariesByCaseId(@Param("caseId") long caseId);
 
   // 초안 상세 조회에 필요한 현재 내용을 읽는다.
   EmailDraft findById(@Param("draftId") long draftId);

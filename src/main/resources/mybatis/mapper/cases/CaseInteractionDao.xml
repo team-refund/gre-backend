@@ -62,4 +62,44 @@
           AND id = #{interactionId}
           AND case_interactions_status = 'PENDING'
     </update>
+
+    <insert id="insertRequirementUpdate">
+        INSERT INTO case_interactions (
+            case_id, run_id, interaction_type, prompt, response,
+            case_interactions_status, responded_at
+        )
+        VALUES (
+            #{caseId}, #{runId}, 'TEXT', #{prompt},
+            jsonb_build_object('requirement', CAST(#{requirement} AS text)),
+            'ANSWERED', CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <sql id="requirementFilter">
+        interaction.case_id = #{caseId}
+        AND interaction.case_interactions_status = 'ANSWERED'
+        AND interaction.interaction_type = 'TEXT'
+        AND interaction.response ->> 'requirement' IS NOT NULL
+        AND run.trigger_type = 'USER_INFO_UPDATED'
+        AND starts_with(run.trigger_key, #{triggerKeyPrefix})
+    </sql>
+
+    <select id="findLatestRequirement" resultType="string">
+        SELECT interaction.response ->> 'requirement'
+        FROM case_interactions interaction
+        JOIN orchestrator_runs run ON run.id = interaction.run_id
+        WHERE <include refid="requirementFilter"/>
+        ORDER BY interaction.id DESC
+        LIMIT 1
+    </select>
+
+    <select id="findRequirementByRunId" resultType="string">
+        SELECT interaction.response ->> 'requirement'
+        FROM case_interactions interaction
+        JOIN orchestrator_runs run ON run.id = interaction.run_id
+        WHERE <include refid="requirementFilter"/>
+          AND run.id = #{runId}
+        ORDER BY interaction.id DESC
+        LIMIT 1
+    </select>
 </mapper>

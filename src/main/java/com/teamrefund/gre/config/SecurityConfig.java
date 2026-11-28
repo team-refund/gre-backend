@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -29,13 +30,10 @@ class SecurityConfig {
       @Value("${gre.dev.test-login-enabled}") boolean testLoginEnabled,
       @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver)
       throws Exception {
-    var paths = PathPatternRequestMatcher.withDefaults();
-    var testLogin = paths.matcher(HttpMethod.POST, "/api/dev/test-login");
-    if (testLoginEnabled) {
-      var createCase = paths.matcher(HttpMethod.POST, "/api/cases");
-      http.csrf(csrf -> csrf.ignoringRequestMatchers(testLogin, createCase));
-    }
-    return http.authorizeHttpRequests(
+    var testLogin =
+        PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/dev/test-login");
+    return http.csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(
             requests -> {
               if (testLoginEnabled) {
                 requests.requestMatchers(testLogin).permitAll();
