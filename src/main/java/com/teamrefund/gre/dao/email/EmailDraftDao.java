@@ -1,6 +1,12 @@
 package com.teamrefund.gre.dao.email;
 
+import com.teamrefund.gre.dto.query.email.EmailDraftRow;
+import com.teamrefund.gre.dto.query.email.EmailSendAttempt;
 import com.teamrefund.gre.entity.email.EmailDraft;
+import com.teamrefund.gre.entity.email.EmailDraftStatus;
+import com.teamrefund.gre.entity.email.EmailSendStatus;
+import java.time.Instant;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -24,4 +30,44 @@ public interface EmailDraftDao {
 
   // 발송 시도와 초안의 SENT 상태를 하나의 DB 작업으로 함께 저장한다.
   int updateToSent(@Param("draftId") long draftId);
+
+  EmailDraftRow findOwnedDraft(@Param("draftId") long draftId, @Param("loginId") String loginId);
+
+  List<Long> findAttachmentEvidenceIds(long draftId);
+
+  EmailDraftRow lockOwnedDraft(@Param("draftId") long draftId, @Param("loginId") String loginId);
+
+  Instant updateDraft(
+      @Param("draftId") long draftId,
+      @Param("to") String to,
+      @Param("subject") String subject,
+      @Param("body") String body);
+
+  void deleteAttachments(long draftId);
+
+  int addAttachment(
+      @Param("draftId") long draftId,
+      @Param("caseId") long caseId,
+      @Param("evidenceId") long evidenceId);
+
+  List<EmailDraftRow.Attachment> findAttachments(long draftId);
+
+  boolean existsOwnedDraft(@Param("draftId") long draftId, @Param("loginId") String loginId);
+
+  EmailSendAttempt findAttempt(long draftId);
+
+  int insertSendAttempt(
+      @Param("draftId") long draftId,
+      @Param("connectionId") long connectionId,
+      @Param("requestKey") String requestKey,
+      @Param("messageIdHeader") String messageIdHeader);
+
+  void updateDraftStatus(@Param("draftId") long draftId, @Param("status") EmailDraftStatus status);
+
+  int updateAttempt(
+      @Param("attemptId") long attemptId,
+      @Param("status") EmailSendStatus status,
+      @Param("gmailMessageId") String gmailMessageId,
+      @Param("gmailThreadId") String gmailThreadId,
+      @Param("errorCode") String errorCode);
 }
