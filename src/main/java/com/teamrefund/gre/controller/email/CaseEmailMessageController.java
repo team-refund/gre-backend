@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/cases/{caseId}/email-messages")
 @RequiredArgsConstructor
 public class CaseEmailMessageController {
-  private final CaseEmailMessageQueryService queryService;
+  private final CaseEmailMessageQueryService caseEmailMessageQueryService;
 
   @GetMapping
   public CaseEmailMessagePageResponse listMessages(
@@ -23,7 +23,7 @@ public class CaseEmailMessageController {
       @PathVariable("caseId") long caseId,
       @RequestParam(name = "page", defaultValue = "0") int page,
       @RequestParam(name = "size", defaultValue = "20") int size) {
-    var result = queryService.listMessages(principal.getName(), caseId, page, size);
+    var result = caseEmailMessageQueryService.listMessages(principal.getName(), caseId, page, size);
     var items = result.getItems().stream().map(CaseEmailMessageResponse::new).toList();
     return new CaseEmailMessagePageResponse(items, page, size, result.getTotal());
   }
@@ -34,6 +34,6 @@ public class CaseEmailMessageController {
       @PathVariable("caseId") long caseId,
       @PathVariable("messageId") long messageId) {
     return new CaseEmailMessageResponse(
-        queryService.getMessage(principal.getName(), caseId, messageId));
+        caseEmailMessageQueryService.getMessage(principal.getName(), caseId, messageId));
   }
 }

@@ -27,12 +27,16 @@
         ON CONFLICT (case_email_thread_id, gmail_message_id) DO NOTHING
     </insert>
 
-    <!-- 사건에 연결된 스레드의 전체 메시지 건수를 센다. -->
-    <select id="countByCaseId" resultType="long">
-        SELECT count(*)
+    <sql id="caseMessages">
         FROM email_messages AS message
         JOIN case_email_threads AS thread ON thread.id = message.case_email_thread_id
         WHERE thread.case_id = #{caseId}
+    </sql>
+
+    <!-- 사건에 연결된 스레드의 전체 메시지 건수를 센다. -->
+    <select id="countByCaseId" resultType="long">
+        SELECT COUNT(*)
+        <include refid="caseMessages"/>
     </select>
 
     <sql id="caseMessageSelect">
@@ -40,21 +44,19 @@
                message.direction, message.sender_email, message.recipient_email,
                message.subject, message.body,
                COALESCE(message.received_at, message.created_at) AS sent_or_received_at
-        FROM email_messages AS message
-        JOIN case_email_threads AS thread ON thread.id = message.case_email_thread_id
+        <include refid="caseMessages"/>
     </sql>
 
     <!-- 수신 시각을 사용하고 값이 없으면 저장 시각을 사용한다. -->
     <select id="findPageByCaseId" resultMap="caseEmailMessage">
         <include refid="caseMessageSelect"/>
-        WHERE thread.case_id = #{caseId}
         ORDER BY sent_or_received_at DESC, message.id DESC
-        LIMIT #{limit} OFFSET #{offset}
+        LIMIT #{limit}
+        OFFSET #{offset}
     </select>
 
     <select id="findByCaseIdAndMessageId" resultMap="caseEmailMessage">
         <include refid="caseMessageSelect"/>
-        WHERE thread.case_id = #{caseId}
           AND message.id = #{messageId}
     </select>
 </mapper>

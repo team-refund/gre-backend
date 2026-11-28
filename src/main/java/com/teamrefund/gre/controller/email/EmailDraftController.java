@@ -30,7 +30,7 @@ import tools.jackson.databind.JsonNode;
 @RequiredArgsConstructor
 public class EmailDraftController {
   private final EmailDraftQueryService draftQueryService;
-  private final EmailDraftTransactionService drafts;
+  private final EmailDraftTransactionService draftTransactionService;
   private final EmailDraftSendService sendService;
 
   // 최신 이메일 초안의 상세 정보와 미리보기를 조회합니다.
@@ -46,7 +46,7 @@ public class EmailDraftController {
       Principal principal,
       @PathVariable("draftId") long draftId,
       @Valid @RequestBody EmailDraftContentRequest request) {
-    var details = drafts.updateDraft(principal.getName(), draftId, request);
+    var details = draftTransactionService.updateDraft(principal.getName(), draftId, request);
     return new EmailDraftResponse(details.getDraft(), details.getAttachmentEvidenceIds());
   }
 
@@ -69,7 +69,7 @@ public class EmailDraftController {
       Principal principal,
       @PathVariable("draftId") Long draftId,
       @Valid @RequestBody(required = false) EmailDraftContentRequest request) {
-    var savedAt = drafts.approveDraft(principal.getName(), draftId, request);
+    var savedAt = draftTransactionService.approveDraft(principal.getName(), draftId, request);
     return new DraftApprovalResponse(draftId, EmailDraftStatus.FINALIZED, savedAt);
   }
 

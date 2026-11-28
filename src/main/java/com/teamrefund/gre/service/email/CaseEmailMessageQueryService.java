@@ -26,8 +26,10 @@ public class CaseEmailMessageQueryService {
       throw new BusinessException(ErrorCode.INVALID_REQUEST);
     }
     requireOwnedCase(loginId, caseId);
-    var messages = gmailMessageDao.findPageByCaseId(caseId, (long) page * size, size);
-    return new CaseEmailMessagePageResult(messages, gmailMessageDao.countByCaseId(caseId));
+    long offset = (long) page * size;
+    var messages = gmailMessageDao.findPageByCaseId(caseId, offset, size);
+    long total = gmailMessageDao.countByCaseId(caseId);
+    return new CaseEmailMessagePageResult(messages, total);
   }
 
   public CaseEmailMessageResult getMessage(String loginId, long caseId, long messageId) {

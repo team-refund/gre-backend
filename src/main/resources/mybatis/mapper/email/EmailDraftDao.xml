@@ -111,6 +111,7 @@
         ORDER BY a.id
     </select>
 
+    <!-- 발송 성공 메시지의 내부 ID는 같은 사건의 스레드에서 찾는다. -->
     <select id="findAttempt" resultMap="attempt">
         SELECT attempt.id, attempt.email_draft_id, attempt.email_send_attempts_status,
                attempt.gmail_message_id, attempt.gmail_thread_id, attempt.sent_at,
