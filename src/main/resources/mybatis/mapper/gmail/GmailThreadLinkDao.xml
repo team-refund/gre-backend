@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.gmail.GmailThreadLinkDao">
+    <resultMap id="caseEmailThread" type="com.teamrefund.gre.entity.gmail.CaseEmailThread">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="gmailConnectionId" column="gmail_connection_id"/>
+        <result property="gmailThreadId" column="gmail_thread_id"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- Gmail 연결과 Gmail 스레드 ID로 기존 사건 연결을 확인한다. -->
+    <select id="findByGmailThread" resultMap="caseEmailThread">
+        SELECT id, case_id, gmail_connection_id, gmail_thread_id, created_at
+        FROM case_email_threads
+        WHERE gmail_connection_id = #{gmailConnectionId}
+          AND gmail_thread_id = #{gmailThreadId}
+    </select>
+
+    <!-- 처음 보는 Gmail 스레드를 사건에 연결하고 내부 스레드 ID를 채운다. -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO case_email_threads (case_id, gmail_connection_id, gmail_thread_id)
+        VALUES (#{caseId}, #{gmailConnectionId}, #{gmailThreadId})
+        ON CONFLICT (gmail_connection_id, gmail_thread_id) DO NOTHING
+    </insert>
+</mapper>

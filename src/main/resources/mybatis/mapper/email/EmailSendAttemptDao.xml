@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.email.EmailSendAttemptDao">
+    <resultMap id="emailSendAttempt" type="com.teamrefund.gre.entity.email.EmailSendAttempt">
+        <id property="id" column="id"/>
+        <result property="emailDraftId" column="email_draft_id"/>
+        <result property="gmailConnectionId" column="gmail_connection_id"/>
+        <result property="requestKey" column="request_key"/>
+        <result property="messageIdHeader" column="message_id_header"/>
+        <result property="emailSendAttemptsStatus" column="email_send_attempts_status"/>
+        <result property="gmailMessageId" column="gmail_message_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="gmailThreadId" column="gmail_thread_id"/>
+        <result property="attemptCount" column="attempt_count"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="sentAt" column="sent_at"/>
+    </resultMap>
+
+    <!-- 초안의 발송 결과를 확인할 때 초안별 발송 시도 기록을 조회한다. -->
+    <select id="findByDraftId" resultMap="emailSendAttempt">
+        SELECT id, email_draft_id, gmail_connection_id, request_key, message_id_header,
+               email_send_attempts_status, gmail_message_id, created_at, updated_at,
+               gmail_thread_id, attempt_count, error_message, sent_at
+        FROM email_send_attempts
+        WHERE email_draft_id = #{draftId}
+    </select>
+
+    <!-- 승인된 초안의 발송을 SENDING으로 등록한다. 고유 키가 충돌하면 0건을 반환한다. -->
+    <insert id="reserveSend" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO email_send_attempts (
+            email_draft_id, gmail_connection_id, request_key, message_id_header
+        )
+        SELECT draft.id, #{gmailConnectionId}, #{requestKey}, #{messageIdHeader}
+        FROM email_drafts AS draft
+        WHERE draft.id = #{emailDraftId}
+          AND draft.email_drafts_status = 'FINALIZED'
+        ON CONFLICT DO NOTHING
+    </insert>
+
+    <!-- 미발송이 확인된 FAILED 기록을 SENDING으로 되돌리고 시도 횟수를 늘린다. 초안은 승인 상태여야 한다. -->
+    <update id="reserveRetry">
+        UPDATE email_send_attempts AS attempt
+        SET email_send_attempts_status = 'SENDING',
+            attempt_count = attempt.attempt_count + 1,
+            error_message = NULL,
+            updated_at = now()
+        FROM email_drafts AS draft
+        WHERE attempt.id = #{attemptId}
+          AND attempt.attempt_count = #{attemptCount}
+          AND attempt.email_send_attempts_status = 'FAILED'
+          AND draft.id = attempt.email_draft_id
+          AND draft.email_drafts_status = 'FINALIZED'
+    </update>
+
+    <!-- 발송 여부를 확인할 수 없는 현재 SENDING 시도를 UNKNOWN으로 기록한다. -->
+    <update id="markUnknown">
+        UPDATE email_send_attempts
+        SET email_send_attempts_status = 'UNKNOWN',
+            error_message = #{errorMessage},
+            updated_at = now()
+        WHERE id = #{id}
+          AND attempt_count = #{attemptCount}
+          AND email_send_attempts_status IN ('SENDING')
+    </update>
+
+    <!-- 미발송이 확인된 시도를 FAILED로 바꾸고 오류를 저장한다. 시도 횟수로 이전 결과의 덮어쓰기를 막는다. -->
+    <update id="markFailed">
+        UPDATE email_send_attempts
+        SET email_send_attempts_status = 'FAILED',
+            error_message = #{errorMessage},
+            updated_at = now()
+        WHERE id = #{id}
+          AND attempt_count = #{attemptCount}
+          AND email_send_attempts_status IN ('SENDING', 'UNKNOWN')
+    </update>
+
+    <!-- 발송이 확인된 시도를 SENT로 바꾸고 Gmail 메시지 ID, 스레드 ID, 발송 시각을 저장한다. -->
+    <update id="markSent">
+        UPDATE email_send_attempts
+        SET email_send_attempts_status = 'SENT',
+            gmail_message_id = #{gmailMessageId},
+            gmail_thread_id = #{gmailThreadId},
+            sent_at = #{sentAt},
+            error_message = NULL,
+            updated_at = now()
+        WHERE id = #{id}
+          AND attempt_count = #{attemptCount}
+          AND email_send_attempts_status IN ('SENDING', 'UNKNOWN')
+    </update>
+</mapper>
