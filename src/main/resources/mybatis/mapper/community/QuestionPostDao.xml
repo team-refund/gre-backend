@@ -8,7 +8,7 @@
         <result property="title" column="title"/>
         <result property="content" column="content"/>
         <result property="questionCategory" column="question_category"/>
-        <result property="questionStatus" column="question_posts_question_status"/>
+        <result property="questionPostsQuestionStatus" column="question_posts_question_status"/>
         <result property="viewCount" column="view_count"/>
         <result property="checkedCommentId" column="checked_commentid"/>
         <result property="resolvedAt" column="resolved_at"/>
@@ -28,7 +28,7 @@
         VALUES (
             #{userId}, #{title}, #{content},
             #{questionCategory, jdbcType=VARCHAR},
-            COALESCE(#{questionStatus, jdbcType=VARCHAR}, 'OPEN')
+            COALESCE(#{questionPostsQuestionStatus, jdbcType=VARCHAR}, 'OPEN')
         )
     </insert>
 

@@ -1,8 +1,9 @@
 package com.teamrefund.gre.entity.cases;
 
-import java.util.Date;
+import java.time.Instant;
 import lombok.Data;
 
+/** AI 실행 중 사용자에게 제시한 질문, 선택지, 응답을 저장합니다. DB 테이블은 {@code case_interactions}입니다. */
 @Data
 public class CaseInteraction {
   private Long id;
@@ -13,6 +14,6 @@ public class CaseInteraction {
   private String options;
   private String response;
   private String caseInteractionsStatus;
-  private Date createdAt;
-  private Date respondedAt;
+  private Instant createdAt;
+  private Instant respondedAt;
 }

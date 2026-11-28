@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.email.EmailDraftMessageDao">
+    <resultMap id="emailDraftMessage" type="com.teamrefund.gre.entity.email.EmailDraftMessage">
+        <id property="id" column="id"/>
+        <result property="emailDraftId" column="email_draft_id"/>
+        <result property="role" column="role"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- 초안 작성 화면의 대화 이력을 생성 시각순으로 조회한다. 시각이 같으면 ID순으로 정렬한다. -->
+    <select id="findByDraftId" resultMap="emailDraftMessage">
+        SELECT id, email_draft_id, role, content, created_at
+        FROM email_draft_messages
+        WHERE email_draft_id = #{draftId}
+        ORDER BY created_at, id
+    </select>
+
+    <!-- email_draft_id는 기존 초안 ID다. 생성된 id는 사용자 요청 또는 AI 답변 한 건의 ID다. -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO email_draft_messages (email_draft_id, role, content)
+        VALUES (#{emailDraftId}, #{role}, #{content})
+    </insert>
+</mapper>

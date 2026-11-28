@@ -27,4 +27,6 @@ public interface FreePostDao {
 
   // 게시글 상세 화면 열 때
   FreePost findById(@Param("postId") long postId);
+
+  // 자유게시판 좋아요는 추후 검토
 }

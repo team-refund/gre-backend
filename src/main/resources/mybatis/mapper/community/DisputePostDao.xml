@@ -10,7 +10,7 @@
         <result property="merchantName" column="merchant_name"/>
         <result property="purchaseSite" column="purchase_site"/>
         <result property="disputeType" column="dispute_type"/>
-        <result property="resolutionStatus" column="dispute_posts_resolution_status"/>
+        <result property="disputePostsResolutionStatus" column="dispute_posts_resolution_status"/>
         <result property="viewCount" column="view_count"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -30,7 +30,7 @@
             #{merchantName, jdbcType=VARCHAR},
             #{purchaseSite, jdbcType=VARCHAR},
             #{disputeType, jdbcType=VARCHAR},
-            COALESCE(#{resolutionStatus, jdbcType=VARCHAR}, 'IN_PROGRESS')
+            COALESCE(#{disputePostsResolutionStatus, jdbcType=VARCHAR}, 'IN_PROGRESS')
         )
     </insert>
 
@@ -41,7 +41,7 @@
             merchant_name = #{merchantName, jdbcType=VARCHAR},
             purchase_site = #{purchaseSite, jdbcType=VARCHAR},
             dispute_type = #{disputeType, jdbcType=VARCHAR},
-            dispute_posts_resolution_status = COALESCE(#{resolutionStatus, jdbcType=VARCHAR}, dispute_posts_resolution_status),
+            dispute_posts_resolution_status = COALESCE(#{disputePostsResolutionStatus, jdbcType=VARCHAR}, dispute_posts_resolution_status),
             updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
           AND user_id = #{userId}

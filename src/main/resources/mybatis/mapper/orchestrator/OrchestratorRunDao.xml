@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.orchestrator.OrchestratorRunDao">
+    <resultMap id="orchestratorRun" type="com.teamrefund.gre.entity.orchestrator.OrchestratorRun">
+        <id property="id" column="id"/>
+        <result property="caseId" column="case_id"/>
+        <result property="triggerType" column="trigger_type"/>
+        <result property="triggerKey" column="trigger_key"/>
+        <result property="orchestratorRunsStatus" column="orchestrator_runs_status"/>
+        <result property="nextAction" column="next_action"/>
+        <result property="resultData" column="result_data"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="completedAt" column="completed_at"/>
+    </resultMap>
+
+    <!-- 조회에 공통으로 쓰는 컬럼이다. JSON 결과는 Java에서 읽을 수 있도록 문자열로 반환한다. -->
+    <sql id="runColumns">
+        id, case_id, trigger_type, trigger_key, orchestrator_runs_status, next_action,
+        CAST(result_data AS text) AS result_data, error_message, created_at, updated_at, completed_at
+    </sql>
+
+    <!-- 사건 ID, 실행 계기, 이벤트 키가 같은 실행이 있으면 새 행을 만들지 않는다. -->
+    <insert id="insertPending" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO orchestrator_runs (case_id, trigger_type, trigger_key)
+        VALUES (#{caseId}, #{triggerType}, #{triggerKey})
+        ON CONFLICT (case_id, trigger_type, trigger_key) DO NOTHING
+    </insert>
+
+    <!-- 실행 ID에 해당하는 한 건을 조회한다. -->
+    <select id="findById" resultMap="orchestratorRun">
+        SELECT <include refid="runColumns"/>
+        FROM orchestrator_runs
+        WHERE id = #{runId}
+    </select>
+
+    <!-- 중복 등록을 확인할 때 저장한 세 가지 키로 기존 실행을 조회한다. -->
+    <select id="findByTrigger" resultMap="orchestratorRun">
+        SELECT <include refid="runColumns"/>
+        FROM orchestrator_runs
+        WHERE case_id = #{caseId}
+          AND trigger_type = #{triggerType}
+          AND trigger_key = #{triggerKey}
+    </select>
+
+    <select id="findLatestByCaseId" resultMap="orchestratorRun">
+        SELECT <include refid="runColumns"/>
+        FROM orchestrator_runs
+        WHERE case_id = #{caseId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <!-- PENDING인 행만 갱신하므로 다른 요청이 먼저 실행을 시작하면 0을 반환한다. -->
+    <update id="claimPending">
+        UPDATE orchestrator_runs
+        SET orchestrator_runs_status = 'PROCESSING',
+            updated_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PENDING'
+    </update>
+
+    <!-- PROCESSING 상태에서만 result_data를 전달받은 JSON으로 갱신한다. -->
+    <update id="updateProgress">
+        UPDATE orchestrator_runs
+        SET result_data = CAST(#{resultData,jdbcType=VARCHAR} AS jsonb),
+            updated_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PROCESSING'
+    </update>
+
+    <!-- PROCESSING 상태인 실행을 COMPLETED로 바꾸고 최종 결과와 완료 시각을 함께 저장한다. -->
+    <update id="markCompleted">
+        UPDATE orchestrator_runs
+        SET orchestrator_runs_status = 'COMPLETED',
+            next_action = #{nextAction,jdbcType=VARCHAR},
+            result_data = CAST(#{resultData,jdbcType=VARCHAR} AS jsonb),
+            updated_at = now(),
+            completed_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PROCESSING'
+    </update>
+
+    <!-- PROCESSING 상태인 실행을 FAILED로 바꾸고 오류 메시지와 종료 시각을 저장한다. -->
+    <update id="markFailed">
+        UPDATE orchestrator_runs
+        SET orchestrator_runs_status = 'FAILED',
+            error_message = #{errorMessage},
+            updated_at = now(),
+            completed_at = now()
+        WHERE id = #{runId}
+          AND orchestrator_runs_status = 'PROCESSING'
+    </update>
+</mapper>

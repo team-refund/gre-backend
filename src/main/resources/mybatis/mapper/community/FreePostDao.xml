@@ -8,13 +8,12 @@
         <result property="title" column="title"/>
         <result property="content" column="content"/>
         <result property="viewCount" column="view_count"/>
-        <result property="likeCount" column="like_count"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <sql id="columns">
-        id, user_id, title, content, view_count, like_count,
+        id, user_id, title, content, view_count,
         created_at, updated_at
     </sql>
 

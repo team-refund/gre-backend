@@ -7,9 +7,6 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface CaseDao {
-  // 로그인 ID로 삭제되지 않은 활성 회원의 ID를 조회(로그인은 완료된걸로 하기로 결정)
-  Long findActiveUserId(@Param("loginId") String loginId);
-
   // 사건등록(DB저장하는거) 메소드
   int insertCase(Case newCase);
 
