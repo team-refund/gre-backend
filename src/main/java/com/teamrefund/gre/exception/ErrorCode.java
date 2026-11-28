@@ -17,7 +17,10 @@ public enum ErrorCode {
   GMAIL_TOKEN_EXCHANGE_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 인증을 완료하지 못했습니다."),
   GMAIL_NOT_CONNECTED(HttpStatus.CONFLICT, "Gmail을 먼저 연결해 주세요."),
   GMAIL_REAUTH_REQUIRED(HttpStatus.CONFLICT, "Gmail을 다시 연결해 주세요."),
-  GMAIL_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 메일을 조회하지 못했습니다.");
+  GMAIL_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 메일을 조회하지 못했습니다."),
+  POLICY_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "정책 검색을 완료하지 못했습니다."),
+  POLICY_REVIEW_FAILED(HttpStatus.BAD_GATEWAY, "정책 검토 결과를 확인하지 못했습니다."),
+  POLICY_RESULT_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "정책 검토 결과를 저장하지 못했습니다.");
   private final HttpStatus status;
   private final String message;
 }

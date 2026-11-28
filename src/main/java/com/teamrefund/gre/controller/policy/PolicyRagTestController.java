@@ -7,8 +7,6 @@ import static com.teamrefund.gre.service.policy.PolicyIngestionService.DEFAULT_S
 import com.teamrefund.gre.dto.response.policy.PolicyRagResponse;
 import com.teamrefund.gre.service.policy.PolicyIngestionService;
 import com.teamrefund.gre.service.policy.PolicyRagService;
-import jakarta.validation.constraints.DecimalMax;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -34,13 +32,8 @@ public class PolicyRagTestController {
   @GetMapping
   public PolicyRagResponse reviewPolicy(
       @RequestParam(name = "question") String question,
-      @RequestParam(name = "platform", defaultValue = "EBAY") String platform,
-      @RequestParam(name = "topK", defaultValue = "5") @Positive int topK,
-      @RequestParam(name = "similarityThreshold", defaultValue = "0.0")
-          @DecimalMin("0.0")
-          @DecimalMax("1.0")
-          double similarityThreshold) {
-    return policyRagService.reviewPolicy(question, similarityThreshold, topK, platform);
+      @RequestParam(name = "platform", defaultValue = "EBAY") String platform) {
+    return policyRagService.reviewPolicy(question, platform);
   }
 
   @PostMapping(value = "/ingest", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

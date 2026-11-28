@@ -1,5 +1,6 @@
 package com.teamrefund.gre.dto.response.policy;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import lombok.Data;
 import lombok.Value;
@@ -28,11 +29,10 @@ public class PolicyRagResponse {
   }
 
   @Data
+  @JsonIgnoreProperties({"articleTitle", "articleNumber"})
   public static class Clause {
     private String chunkId;
     private String policyName;
-    private String articleTitle;
-    private String articleNumber;
     private String originalTextEn;
     private String officialUrl;
   }
