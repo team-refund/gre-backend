@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.gmail.CaseEmailDao">
+    <select id="existsOwnedCase" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM cases
+            WHERE id = #{caseId}
+              AND user_id = #{userId}
+        )
+    </select>
+
+    <select id="lockOwnedGmailConnection" resultType="long">
+        SELECT g.id
+        FROM cases c
+        JOIN users u ON u.id = c.user_id
+        JOIN gmail_connections g ON g.user_id = u.id
+        WHERE c.id = #{caseId}
+          AND u.id = #{userId}
+          AND u.users_status = 'ACTIVE'
+          AND u.deleted_at IS NULL
+          AND g.id = #{connectionId}
+          AND g.google_email = #{googleEmail}
+          AND g.gmail_connections_status = 'CONNECTED'
+        FOR UPDATE OF u, c, g
+    </select>
+
+    <!-- A Gmail thread can be linked to only one case per Gmail connection. -->
+    <select id="upsertCaseThread" resultType="long" affectData="true" flushCache="true">
+        INSERT INTO case_email_threads (case_id, gmail_connection_id, gmail_thread_id)
+        VALUES (#{caseId}, #{connectionId}, #{gmailThreadId})
+        ON CONFLICT (gmail_connection_id, gmail_thread_id) DO UPDATE
+        SET gmail_thread_id = EXCLUDED.gmail_thread_id
+        WHERE case_email_threads.case_id = EXCLUDED.case_id
+        RETURNING id
+    </select>
+
+    <insert id="insertMessage">
+        INSERT INTO email_messages (
+            case_email_thread_id, gmail_message_id, sender_email, recipient_email,
+            subject, body, direction, received_at
+        ) VALUES (
+            #{caseThreadId}, #{message.gmailMessageId}, #{message.senderEmail},
+            #{message.recipientEmail}, #{message.subject}, #{message.body},
+            #{message.direction}, #{message.receivedAt}
+        )
+        ON CONFLICT (case_email_thread_id, gmail_message_id) DO NOTHING
+    </insert>
+</mapper>
