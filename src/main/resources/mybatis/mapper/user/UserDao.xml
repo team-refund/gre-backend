@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.user.UserDao">
+    <resultMap id="user" type="com.teamrefund.gre.entity.user.User">
+        <id property="id" column="id"/>
+        <result property="loginId" column="login_id"/>
+        <result property="email" column="email"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="emailVerified" column="email_verified"/>
+        <result property="usersStatus" column="users_status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <sql id="userColumns">
+        id, login_id, email, password_hash, email_verified, users_status, created_at, updated_at, deleted_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO users (login_id, email, password_hash, email_verified, users_status)
+        VALUES (
+            #{loginId},
+            #{email},
+            #{passwordHash},
+            <choose>
+                <when test="emailVerified != null">#{emailVerified}</when>
+                <otherwise>DEFAULT</otherwise>
+            </choose>,
+            <choose>
+                <when test="usersStatus != null">#{usersStatus}</when>
+                <otherwise>DEFAULT</otherwise>
+            </choose>
+        )
+    </insert>
+
+    <select id="findById" resultMap="user">
+        SELECT <include refid="userColumns"/>
+        FROM users
+        WHERE id = #{userId} AND deleted_at IS NULL
+    </select>
+
+    <select id="findByLoginId" resultMap="user">
+        SELECT <include refid="userColumns"/>
+        FROM users
+        WHERE login_id = #{loginId} AND deleted_at IS NULL
+    </select>
+
+    <select id="findByStatus" resultMap="user">
+        SELECT <include refid="userColumns"/>
+        FROM users
+        WHERE users_status = #{status} AND deleted_at IS NULL
+        ORDER BY id
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="update">
+        UPDATE users
+        SET login_id = #{loginId},
+            email = #{email},
+            password_hash = #{passwordHash},
+            email_verified = #{emailVerified},
+            updated_at = now()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="updateStatus">
+        UPDATE users
+        SET users_status = #{status}, updated_at = now()
+        WHERE id = #{userId} AND deleted_at IS NULL
+    </update>
+
+    <update id="softDelete">
+        UPDATE users
+        SET deleted_at = now(), updated_at = now()
+        WHERE id = #{userId} AND deleted_at IS NULL
+    </update>
+</mapper>
