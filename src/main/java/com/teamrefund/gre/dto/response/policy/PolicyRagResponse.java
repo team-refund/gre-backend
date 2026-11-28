@@ -1,5 +1,6 @@
 package com.teamrefund.gre.dto.response.policy;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import lombok.Data;
@@ -7,12 +8,12 @@ import lombok.Value;
 
 @Value
 public class PolicyRagResponse {
-  SearchStatus searchStatus;
-  String searchNote;
+  @JsonIgnore SearchStatus searchStatus;
+  @JsonIgnore String searchNote;
   List<Clause> clauses;
-  List<Review> reviews;
+  @JsonIgnore List<Review> reviews;
   String evidenceGaps;
-  List<Double> similarityScores;
+  @JsonIgnore List<Double> similarityScores;
 
   public enum SearchStatus {
     EVIDENCE_SUFFICIENT,
