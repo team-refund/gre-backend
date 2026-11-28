@@ -13,20 +13,6 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
-    <select id="findForActiveUser" resultMap="gmailConnection">
-        SELECT gc.id,
-               u.id AS user_id,
-               gc.google_email,
-               COALESCE(gc.gmail_connections_status, 'DISCONNECTED') AS status,
-               gc.oauth_client_registration_id,
-               gc.oauth_principal_name,
-               gc.connected_at,
-               gc.updated_at
-        FROM users u
-        LEFT JOIN gmail_connections gc ON gc.user_id = u.id
-        WHERE u.login_id = #{loginId}
-          AND u.users_status = 'ACTIVE' AND u.deleted_at IS NULL
-    </select>
     <resultMap id="authorizedClient" type="com.teamrefund.gre.entity.gmail.GmailAuthorizedClient">
         <id property="clientRegistrationId" column="client_registration_id"/>
         <id property="principalName" column="principal_name"/>
@@ -40,10 +26,29 @@
         <result property="createdAt" column="created_at"/>
     </resultMap>
 
+    <select id="findForActiveUser" resultMap="gmailConnection">
+        SELECT gc.id,
+               u.id AS user_id,
+               gc.google_email,
+               COALESCE(gc.gmail_connections_status, 'DISCONNECTED') AS status,
+               gc.oauth_client_registration_id,
+               gc.oauth_principal_name,
+               gc.connected_at,
+               gc.updated_at
+        FROM users u
+        LEFT JOIN gmail_connections gc ON gc.user_id = u.id
+        WHERE u.login_id = #{loginId}
+          AND u.users_status = 'ACTIVE'
+          AND u.deleted_at IS NULL
+    </select>
+
     <select id="lockActiveUser" resultType="java.lang.Long">
-        SELECT id FROM users
-        WHERE id = #{userId} AND login_id = #{loginId}
-          AND users_status = 'ACTIVE' AND deleted_at IS NULL
+        SELECT id
+        FROM users
+        WHERE id = #{userId}
+          AND login_id = #{loginId}
+          AND users_status = 'ACTIVE'
+          AND deleted_at IS NULL
         FOR UPDATE
     </select>
 
@@ -52,7 +57,8 @@
                access_token_issued_at, access_token_expires_at, access_token_scopes,
                refresh_token_value, refresh_token_issued_at, created_at
         FROM oauth2_authorized_client
-        WHERE client_registration_id = 'gmail' AND principal_name = #{principalName}
+        WHERE client_registration_id = 'gmail'
+          AND principal_name = #{principalName}
     </select>
 
     <insert id="upsertAuthorizedClient">
@@ -86,14 +92,17 @@
             oauth_principal_name = EXCLUDED.oauth_principal_name,
             updated_at = now()
     </insert>
+
     <update id="updateReauthRequired">
         UPDATE gmail_connections
-        SET gmail_connections_status = 'REAUTH_REQUIRED', updated_at = now()
+        SET gmail_connections_status = 'REAUTH_REQUIRED',
+            updated_at = now()
         WHERE user_id = #{userId}
           AND oauth_client_registration_id = 'gmail'
           AND oauth_principal_name = #{principalName}
           AND gmail_connections_status = 'CONNECTED'
     </update>
+
     <update id="disconnect">
         UPDATE gmail_connections
         SET gmail_connections_status = 'DISCONNECTED',
