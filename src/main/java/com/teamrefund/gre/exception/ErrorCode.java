@@ -20,7 +20,6 @@ public enum ErrorCode {
   GMAIL_TOKEN_REFRESH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 인증을 갱신하지 못했습니다. 잠시 후 다시 시도해 주세요."),
   GMAIL_SEARCH_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 메일을 조회하지 못했습니다."),
   GMAIL_DRAFT_CREATE_FAILED(HttpStatus.BAD_GATEWAY, "Gmail 초안 저장 결과를 확인하지 못했습니다."),
-  GMAIL_THREAD_ALREADY_LINKED(HttpStatus.CONFLICT, "다른 사건에 연결된 Gmail 스레드입니다."),
   GMAIL_THREAD_MERCHANT_MISMATCH(HttpStatus.BAD_REQUEST, "사업자 이메일이 스레드의 송수신 내역에 없습니다."),
   EMAIL_DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "이메일 초안을 찾을 수 없습니다."),
   INVALID_CASE_STATE(HttpStatus.CONFLICT, "현재 상태에서는 이메일 초안을 변경하거나 발송할 수 없습니다."),

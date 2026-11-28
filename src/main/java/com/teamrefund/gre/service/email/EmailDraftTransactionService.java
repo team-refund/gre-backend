@@ -141,18 +141,16 @@ public class EmailDraftTransactionService {
     var connection = claim.connection();
     var caseThreadId =
         caseEmails.upsertCaseThread(draft.getCaseId(), connection.getId(), sent.threadId());
-    if (caseThreadId != null) {
-      caseEmails.insertMessage(
-          caseThreadId,
-          new GmailThreadMessage(
-              sent.messageId(),
-              connection.getGoogleEmail(),
-              draft.getRecipientEmail(),
-              draft.getSubject(),
-              draft.getBody(),
-              "OUTBOUND",
-              Instant.now()));
-    }
+    caseEmails.insertMessage(
+        caseThreadId,
+        new GmailThreadMessage(
+            sent.messageId(),
+            connection.getGoogleEmail(),
+            draft.getRecipientEmail(),
+            draft.getSubject(),
+            draft.getBody(),
+            "OUTBOUND",
+            Instant.now()));
   }
 
   /** 초안 소유권을 확인하고 발송 시도를 조회합니다. */

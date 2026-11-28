@@ -14,7 +14,8 @@ public interface CaseEmailDao {
       @Param("connectionId") long connectionId,
       @Param("googleEmail") String googleEmail);
 
-  Long upsertCaseThread(
+  // 같은 사건에 이미 연결된 스레드면 기존 연결 ID를 반환한다.
+  long upsertCaseThread(
       @Param("caseId") long caseId,
       @Param("connectionId") long connectionId,
       @Param("gmailThreadId") String gmailThreadId);

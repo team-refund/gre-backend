@@ -26,13 +26,11 @@
         FOR UPDATE OF u, c, g
     </select>
 
-    <!-- A Gmail thread can be linked to only one case per Gmail connection. -->
     <select id="upsertCaseThread" resultType="long" affectData="true" flushCache="true">
         INSERT INTO case_email_threads (case_id, gmail_connection_id, gmail_thread_id)
         VALUES (#{caseId}, #{connectionId}, #{gmailThreadId})
-        ON CONFLICT (gmail_connection_id, gmail_thread_id) DO UPDATE
+        ON CONFLICT (case_id, gmail_connection_id, gmail_thread_id) DO UPDATE
         SET gmail_thread_id = EXCLUDED.gmail_thread_id
-        WHERE case_email_threads.case_id = EXCLUDED.case_id
         RETURNING id
     </select>
 

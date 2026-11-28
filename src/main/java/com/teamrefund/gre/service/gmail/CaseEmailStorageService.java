@@ -30,9 +30,6 @@ public class CaseEmailStorageService {
     }
 
     var caseThreadId = caseEmailDao.upsertCaseThread(caseId, connectionId, gmailThreadId);
-    if (caseThreadId == null) {
-      throw new BusinessException(ErrorCode.GMAIL_THREAD_ALREADY_LINKED);
-    }
 
     int savedMessageCount = 0;
     for (var message : messages) {
