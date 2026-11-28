@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.community.DisputePostDao">
+    <resultMap id="result" type="com.teamrefund.gre.entity.community.DisputePost">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="merchantName" column="merchant_name"/>
+        <result property="purchaseSite" column="purchase_site"/>
+        <result property="disputeType" column="dispute_type"/>
+        <result property="disputePostsResolutionStatus" column="dispute_posts_resolution_status"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, user_id, title, content, merchant_name, purchase_site,
+        dispute_type, dispute_posts_resolution_status, view_count, created_at, updated_at
+    </sql>
+
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO dispute_posts (
+            user_id, title, content, merchant_name, purchase_site, dispute_type, dispute_posts_resolution_status
+        )
+        VALUES (
+            #{userId}, #{title}, #{content},
+            #{merchantName, jdbcType=VARCHAR},
+            #{purchaseSite, jdbcType=VARCHAR},
+            #{disputeType, jdbcType=VARCHAR},
+            COALESCE(#{disputePostsResolutionStatus, jdbcType=VARCHAR}, 'IN_PROGRESS')
+        )
+    </insert>
+
+    <update id="updatePost">
+        UPDATE dispute_posts
+        SET title = #{title},
+            content = #{content},
+            merchant_name = #{merchantName, jdbcType=VARCHAR},
+            purchase_site = #{purchaseSite, jdbcType=VARCHAR},
+            dispute_type = #{disputeType, jdbcType=VARCHAR},
+            dispute_posts_resolution_status = COALESCE(#{disputePostsResolutionStatus, jdbcType=VARCHAR}, dispute_posts_resolution_status),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND user_id = #{userId}
+    </update>
+
+    <delete id="deletePost">
+        DELETE FROM dispute_posts
+        WHERE id = #{postId}
+          AND user_id = #{userId}
+    </delete>
+
+    <select id="findLatest" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM dispute_posts
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findPage" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM dispute_posts
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPosts" resultType="long">
+        SELECT COUNT(*)
+        FROM dispute_posts
+    </select>
+
+    <select id="findById" resultMap="result">
+        SELECT <include refid="columns"/>
+        FROM dispute_posts
+        WHERE id = #{postId}
+    </select>
+</mapper>
