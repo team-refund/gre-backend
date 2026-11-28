@@ -22,13 +22,6 @@
         )
     </sql>
 
-    <sql id="listFilter">
-        <include refid="ownedCaseFilter"/>
-        <if test="status != null">
-            AND case_interactions_status = #{status}
-        </if>
-    </sql>
-
     <insert id="insertInteraction" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO case_interactions (case_id, run_id, interaction_type, prompt, options)
         SELECT run.case_id, run.id, #{interactionType}, #{prompt},
@@ -38,19 +31,16 @@
           AND run.case_id = #{caseId}
     </insert>
 
-    <select id="findByCaseIdAndUserId" resultMap="caseInteractionResultMap">
+    <select id="findLatestByRunIdAndUserId" resultMap="caseInteractionResultMap">
         SELECT id, case_id, run_id, interaction_type, prompt, options, response,
                case_interactions_status, created_at, responded_at
         FROM case_interactions
-        WHERE <include refid="listFilter"/>
+        WHERE run_id = #{runId}
+          AND EXISTS (
+              SELECT 1 FROM cases WHERE id = case_interactions.case_id AND user_id = #{userId}
+          )
         ORDER BY created_at DESC, id DESC
-        LIMIT #{limit, jdbcType=INTEGER} OFFSET #{offset}
-    </select>
-
-    <select id="countByCaseIdAndUserId" resultType="long">
-        SELECT COUNT(*)
-        FROM case_interactions
-        WHERE <include refid="listFilter"/>
+        LIMIT 1
     </select>
 
     <update id="answerInteraction">

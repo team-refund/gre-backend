@@ -19,10 +19,7 @@ public interface CaseStatusHistoryDao {
       @Param("status") String status,
       @Param("description") String description);
 
-  // 본인 사건의 이력을 최신순으로 조회한다. limit이 null이면 개수를 제한하지 않는다.
+  // 본인 사건의 전체 이력을 최신순으로 조회한다.
   List<CaseStatusHistory> findByCaseIdAndUserId(
-      @Param("caseId") long caseId,
-      @Param("userId") long userId,
-      @Param("limit") Integer limit,
-      @Param("offset") long offset);
+      @Param("caseId") long caseId, @Param("userId") long userId);
 }
