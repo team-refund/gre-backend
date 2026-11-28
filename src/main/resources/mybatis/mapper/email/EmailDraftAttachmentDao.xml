@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.teamrefund.gre.dao.email.EmailDraftAttachmentDao">
+    <resultMap id="attachmentFile" type="com.teamrefund.gre.dto.query.email.EmailAttachmentFile">
+        <id property="evidenceId" column="evidence_id"/>
+        <result property="originalFilename" column="original_filename"/>
+        <result property="filePath" column="file_path"/>
+        <result property="contentType" column="content_type"/>
+    </resultMap>
+
+    <!-- Gmail 발송에서 파일을 읽을 때 초안과 같은 사건의 첨부 증빙만 조회한다. -->
+    <select id="findFilesByDraftId" resultMap="attachmentFile">
+        SELECT evidence.id AS evidence_id, evidence.original_filename,
+               evidence.file_path, evidence.content_type
+        FROM email_draft_attachments AS attachment
+        JOIN email_drafts AS draft ON draft.id = attachment.email_draft_id
+        JOIN case_evidences AS evidence ON evidence.id = attachment.evidence_id
+                                       AND evidence.case_id = draft.case_id
+        WHERE attachment.email_draft_id = #{draftId}
+        ORDER BY attachment.id
+    </select>
+
+    <!-- 초안의 사건과 증빙의 사건이 일치할 때만 첨부 연결을 저장한다. -->
+    <insert id="insertAttachment">
+        INSERT INTO email_draft_attachments (email_draft_id, evidence_id)
+        SELECT draft.id, evidence.id
+        FROM email_drafts AS draft
+        JOIN case_evidences AS evidence ON evidence.case_id = draft.case_id
+        WHERE draft.id = #{emailDraftId}
+          AND evidence.id = #{evidenceId}
+    </insert>
+
+    <!-- 초안 ID에 해당하는 첨부 연결 행만 삭제한다. 초안과 증빙 파일은 그대로 남는다. -->
+    <delete id="clearAttachments">
+        DELETE FROM email_draft_attachments
+        WHERE email_draft_id = #{draftId}
+    </delete>
+</mapper>
